@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environments
+.venv/
+env/
+venv/
+
+# Local data
+data.db
+
+# Config
+config.json
+
+# OS / editors
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/

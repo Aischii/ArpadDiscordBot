@@ -1,0 +1,102 @@
+{
+  "BOT_TOKEN": "PUT_BOT_TOKEN_HERE",
+  "GUILD_ID": 123456789012345678,
+  "WELCOME_WEBHOOK_URL": "https://discord.com/api/webhooks/...",
+  "LEVEL_UP_CHANNEL_ID": 123456789012345678,
+
+  "NO_XP_CHANNEL_IDS": [111111111111111111],
+  "NO_XP_CATEGORY_IDS": [222222222222222222],
+
+  "LEVEL_ROLE_MAP": {
+    "1": 444444444444444444,
+    "5": 555555555555555555,
+    "10": 666666666666666666,
+    "15": 777777777777777777,
+    "20": 888888888888888888,
+    "25": 999999999999999999,
+    "30": 101010101010101010,
+    "35": 121212121212121212,
+    "40": 131313131313131313,
+    "50": 141414141414141414
+  },
+
+  "xp": {
+    "message": {
+      "enabled": true,
+      "cooldown_seconds": 60,
+      "base_xp": 10,
+      "length_bonus": {
+        "enabled": true,
+        "max_bonus": 5,
+        "chars_per_bonus_xp": 40
+      },
+      "attachment_bonus": {
+        "enabled": true,
+        "image_or_video_bonus": 5
+      }
+    },
+    "voice": {
+      "enabled": true,
+      "tick_seconds": 60,
+      "xp_per_minute": 5,
+      "require_not_alone": true
+    },
+    "counting": {
+      "enabled": true,
+      "channel_id": 333333333333333333,
+      "target": 100,
+      "success_xp_per_user": 50,
+      "penalty": {
+        "xp_loss_percent": 10,
+        "level_loss_percent": 10
+      }
+    },
+    "level_formula": {
+      "type": "power",
+      "power": 0.25
+    }
+  },
+  "milestones": {
+    "message_count": {
+      "enabled": true,
+      "thresholds": [1000, 5000, 10000],
+      "reward_xp": 100,
+      "reward_role_ids": {
+        "1000": 111111111111111111,
+        "5000": 222222222222222222,
+        "10000": 333333333333333333
+      }
+    },
+    "counting_rounds": {
+      "enabled": true,
+      "thresholds": [10, 25, 50],
+      "reward_xp": 150,
+      "reward_role_ids": {
+        "10": 444444444444444444,
+        "25": 555555555555555555,
+        "50": 666666666666666666
+      }
+    }
+  },
+  "streaks": {
+    "enabled": true,
+    "chat_streak_days": 7,
+    "reward_xp": 200,
+    "reward_role_id": 777777777777777777,
+    "reset_if_inactive_hours": 24
+  },
+  "leaderboards": {
+    "page_size": 10,
+    "allow_server_wide": true
+  },
+  "powerups": {
+    "counting_double_xp": {
+      "enabled": true,
+      "role_notify_id": 888888888888888888,
+      "day_of_week": 0,
+      "min_start_hour": 0,
+      "max_start_hour": 23,
+      "duration_minutes": 60
+    }
+  }
+}

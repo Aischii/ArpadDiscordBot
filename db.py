@@ -1,0 +1,225 @@
+"""
+SQLite helper utilities for the Discord bot.
+Creates the required schema on import and exposes a few helper functions
+for XP, leveling, and future economy expansion.
+"""
+
+from __future__ import annotations
+
+import sqlite3
+from pathlib import Path
+from typing import Any, Dict, Optional, Iterable
+
+DB_PATH = Path("data.db")
+
+
+def _get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _init_db() -> None:
+    DB_PATH.touch(exist_ok=True)
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                user_id TEXT PRIMARY KEY,
+                xp INTEGER DEFAULT 0,
+                level INTEGER DEFAULT 0,
+                total_messages INTEGER DEFAULT 0,
+                total_voice_seconds INTEGER DEFAULT 0,
+                last_message_ts INTEGER DEFAULT 0,
+                balance INTEGER DEFAULT 0,
+                bank INTEGER DEFAULT 0,
+                counting_success_rounds INTEGER DEFAULT 0,
+                current_streak_days INTEGER DEFAULT 0,
+                last_active_day TEXT DEFAULT NULL
+            )
+            """
+        )
+        _ensure_columns(
+            conn,
+            {
+                "counting_success_rounds": "INTEGER DEFAULT 0",
+                "current_streak_days": "INTEGER DEFAULT 0",
+                "last_active_day": "TEXT DEFAULT NULL",
+            },
+        )
+        conn.commit()
+
+
+def _ensure_columns(conn: sqlite3.Connection, columns: Dict[str, str]) -> None:
+    cur = conn.execute("PRAGMA table_info(users)")
+    existing = {row["name"] for row in cur.fetchall()}
+    for col, ddl in columns.items():
+        if col not in existing:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col} {ddl}")
+
+
+_init_db()
+
+
+def _row_to_dict(row: Optional[sqlite3.Row]) -> Optional[Dict[str, Any]]:
+    if row is None:
+        return None
+    return {k: row[k] for k in row.keys()}
+
+
+def get_user(user_id: int | str) -> Dict[str, Any]:
+    """Fetch a user row, creating it with defaults if missing."""
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_key,))
+        row = cur.fetchone()
+        if row:
+            return _row_to_dict(row)  # type: ignore
+        conn.execute("INSERT INTO users (user_id) VALUES (?)", (user_key,))
+        conn.commit()
+        cur = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_key,))
+        return _row_to_dict(cur.fetchone())  # type: ignore
+
+
+def add_xp(user_id: int | str, amount: int) -> int:
+    """Add XP to a user and return the new total."""
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET xp = xp + ? WHERE user_id = ?",
+            (int(amount), user_key),
+        )
+        conn.commit()
+        cur = conn.execute("SELECT xp FROM users WHERE user_id = ?", (user_key,))
+        row = cur.fetchone()
+        return int(row["xp"]) if row else 0
+
+
+def set_xp(user_id: int | str, amount: int) -> int:
+    """Set XP directly and return the stored total."""
+    user_key = str(user_id)
+    amount = max(0, int(amount))
+    with _get_connection() as conn:
+        conn.execute("UPDATE users SET xp = ? WHERE user_id = ?", (amount, user_key))
+        conn.commit()
+        cur = conn.execute("SELECT xp FROM users WHERE user_id = ?", (user_key,))
+        row = cur.fetchone()
+        return int(row["xp"]) if row else 0
+
+
+def set_level(user_id: int | str, level: int) -> None:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute("UPDATE users SET level = ? WHERE user_id = ?", (int(level), user_key))
+        conn.commit()
+
+
+def increment_messages(user_id: int | str) -> None:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET total_messages = total_messages + 1 WHERE user_id = ?",
+            (user_key,),
+        )
+        conn.commit()
+
+
+def add_voice_time(user_id: int | str, seconds: int) -> None:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET total_voice_seconds = total_voice_seconds + ? WHERE user_id = ?",
+            (int(seconds), user_key),
+        )
+        conn.commit()
+
+
+def set_last_message_ts(user_id: int | str, timestamp: int) -> None:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute("UPDATE users SET last_message_ts = ? WHERE user_id = ?", (int(timestamp), user_key))
+        conn.commit()
+
+
+def increment_counting_rounds(user_id: int | str) -> int:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET counting_success_rounds = counting_success_rounds + 1 WHERE user_id = ?",
+            (user_key,),
+        )
+        conn.commit()
+        cur = conn.execute("SELECT counting_success_rounds FROM users WHERE user_id = ?", (user_key,))
+        row = cur.fetchone()
+        return int(row["counting_success_rounds"]) if row else 0
+
+
+def get_counting_rounds(user_id: int | str) -> int:
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT counting_success_rounds FROM users WHERE user_id = ?", (user_key,))
+        row = cur.fetchone()
+        return int(row["counting_success_rounds"]) if row else 0
+
+
+def update_streak(user_id: int | str, today_date_str: str, reset_if_inactive_hours: int, last_message_ts: int | None = None) -> int:
+    """
+    Update streak based on the provided date string (YYYY-MM-DD).
+    reset_if_inactive_hours: if the gap between messages exceeds this many hours, streak resets.
+    last_message_ts: optional unix ts of the current message; if provided, uses difference in hours vs stored last_message_ts.
+    """
+    user_key = str(user_id)
+    with _get_connection() as conn:
+        cur = conn.execute(
+            "SELECT current_streak_days, last_active_day, last_message_ts FROM users WHERE user_id = ?",
+            (user_key,),
+        )
+        row = cur.fetchone()
+        current_streak = int(row["current_streak_days"]) if row else 0
+        last_active_day = row["last_active_day"] if row else None
+        last_ts = int(row["last_message_ts"]) if row and row["last_message_ts"] is not None else None
+
+        # Inactivity reset based on hours.
+        if reset_if_inactive_hours and last_ts and last_message_ts:
+            hours_since_last = (last_message_ts - last_ts) / 3600
+            if hours_since_last > reset_if_inactive_hours:
+                current_streak = 0
+
+        if last_active_day is None:
+            current_streak = 1
+        elif today_date_str == last_active_day:
+            pass  # same day, no change
+        else:
+            # Simple date diff: assume YYYY-MM-DD, compare string to detect next-day.
+            from datetime import datetime, timedelta
+
+            try:
+                last_date = datetime.strptime(last_active_day, "%Y-%m-%d").date()
+                today = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+                delta_days = (today - last_date).days
+                if delta_days == 1:
+                    current_streak += 1
+                else:
+                    current_streak = 1
+            except ValueError:
+                current_streak = 1
+
+        conn.execute(
+            "UPDATE users SET current_streak_days = ?, last_active_day = ? WHERE user_id = ?",
+            (current_streak, today_date_str, user_key),
+        )
+        conn.commit()
+        return current_streak
+
+
+def get_top_users_by(column_name: str, limit: int) -> list[tuple[str, int]]:
+    allowed = {"xp", "total_messages", "total_voice_seconds", "counting_success_rounds"}
+    if column_name not in allowed:
+        raise ValueError(f"Column {column_name} not allowed for leaderboard.")
+    limit = max(1, min(limit, 100))
+    with _get_connection() as conn:
+        cur = conn.execute(
+            f"SELECT user_id, {column_name} as value FROM users ORDER BY {column_name} DESC LIMIT ?",
+            (limit,),
+        )
+        return [(row["user_id"], int(row["value"])) for row in cur.fetchall()]
