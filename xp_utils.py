@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import Any, Dict
 
 import discord
@@ -44,10 +43,6 @@ def get_counting_success_xp(xp_config: Dict[str, Any]) -> int:
     if not counting_cfg.get("enabled", True):
         return 0
     return int(counting_cfg.get("success_xp_per_user", 0))
-
-
-def apply_counting_powerup_multiplier(base_xp: int, active: bool) -> int:
-    return base_xp * 2 if active else base_xp
 
 
 def get_xp_level(xp_config: Dict[str, Any], xp: int) -> int:

@@ -152,5 +152,14 @@
         "username": "example"
       }
     ]
+  },
+  "dashboard": {
+    "enabled": false,
+    "port": 8080
+  },
+  "bot_api": {
+    "enabled": false,
+    "port": 8081,
+    "url": "http://localhost:8081"
   }
 }

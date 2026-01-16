@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArpadBot Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #eee;
+            background: #f9f9f9;
+            flex-wrap: wrap;
+        }
+        .nav-tabs button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .nav-tabs button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        .nav-tabs button:hover {
+            background: #f0f0f0;
+        }
+        .content {
+            padding: 30px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .form-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        button.btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        button.btn-save {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        button.btn-save:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        button.btn-reset {
+            background: #ddd;
+            color: #333;
+        }
+        button.btn-reset:hover {
+            background: #ccc;
+        }
+        button.btn-restart {
+            background: #ff9800;
+        }
+        button.btn-restart:hover {
+            background: #e68900;
+        }
+        .status-online {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-offline {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert.show {
+            display: block;
+        }
+        .array-input {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .array-item {
+            display: flex;
+            gap: 10px;
+        }
+        .array-item input {
+            flex: 1;
+        }
+        .array-item button {
+            padding: 10px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .array-item button:hover {
+            background: #c82333;
+        }
+        button.btn-add {
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button.btn-add:hover {
+            background: #218838;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 ArpadBot Dashboard</h1>
+            <p>Customize your Discord bot configuration</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-btn active" data-tab="general">General</button>
+            <button class="nav-btn" data-tab="channels">Channels & Roles</button>
+            <button class="nav-btn" data-tab="youtube">YouTube</button>
+            <button class="nav-btn" data-tab="tiktok">TikTok</button>
+            <button class="nav-btn" data-tab="xp">XP & Leveling</button>
+            <button class="nav-btn" data-tab="features">Features</button>
+            <button class="nav-btn" data-tab="embed">Embed Builder</button>
+            <button class="nav-btn" data-tab="control">Bot Control</button>
+        </div>
+
+        <div class="content">
+            <div class="alert" id="alert"></div>
+            <div class="loading" id="loading">Loading...</div>
+
+            <!-- General Tab -->
+            <div class="tab-content active" id="general">
+                <h2>General Settings</h2>
+                <div class="form-section">
+                    <h3>Bot Token</h3>
+                    <div class="form-group">
+                        <label>BOT_TOKEN (from environment or config)</label>
+                        <input type="password" id="botToken" placeholder="Set via BOT_TOKEN env var">
+                        <small>Note: Token is read from environment variables during deployment</small>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Guild Settings</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Guild ID</label>
+                            <input type="number" id="guildId" placeholder="123456789...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channels & Roles Tab -->
+            <div class="tab-content" id="channels">
+                <h2>Channels & Roles</h2>
+                <div class="form-section">
+                    <h3>Channel IDs</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Welcome Channel ID</label>
+                            <input type="number" id="welcomeChannelId" placeholder="123456789...">
+                        </div>
+                        <div class="form-group">
+                            <label>Level Up Channel ID</label>
+                            <input type="number" id="levelUpChannelId" placeholder="123456789...">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>No XP Channels & Categories</h3>
+                    <div class="form-group">
+                        <label>No XP Channel IDs (comma-separated)</label>
+                        <input type="text" id="noXpChannelIds" placeholder="123456789,987654321">
+                    </div>
+                    <div class="form-group">
+                        <label>No XP Category IDs (comma-separated)</label>
+                        <input type="text" id="noXpCategoryIds" placeholder="123456789">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Auto Role IDs (given on join)</h3>
+                    <div class="form-group">
+                        <label>Auto Role IDs (comma-separated)</label>
+                        <input type="text" id="autoRoleIds" placeholder="123456789,987654321">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Level Role Map</h3>
+                    <div id="levelRoleMap"></div>
+                    <button class="btn-add" onclick="addLevelRole()">Add Level Role</button>
+                </div>
+            </div>
+
+            <!-- YouTube Tab -->
+            <div class="tab-content" id="youtube">
+                <h2>YouTube Notifications</h2>
+                <div class="form-section">
+                    <h3>Settings</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="youtubeEnabled"> Enable YouTube Notifications
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Announcement Channel ID</label>
+                            <input type="number" id="youtubeAnnounceChannelId" placeholder="123456789...">
+                        </div>
+                        <div class="form-group">
+                            <label>Mention Role ID (optional)</label>
+                            <input type="number" id="youtubeMentionRoleId" placeholder="123456789...">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>YouTube Data API Key</label>
+                            <input type="password" id="youtubeApiKey" placeholder="AIza...">
+                        </div>
+                        <div class="form-group">
+                            <label>Check Interval (minutes)</label>
+                            <input type="number" id="youtubeCheckInterval" value="5" min="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Channel IDs to Monitor</h3>
+                    <div id="youtubeChannelIds"></div>
+                    <button class="btn-add" onclick="addYoutubeChannel()">Add Channel</button>
+                </div>
+            </div>
+
+            <!-- TikTok Tab -->
+            <div class="tab-content" id="tiktok">
+                <h2>TikTok Notifications</h2>
+                <div class="form-section">
+                    <h3>Settings</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="tiktokEnabled"> Enable TikTok Notifications
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Announcement Channel ID</label>
+                            <input type="number" id="tiktokAnnounceChannelId" placeholder="123456789...">
+                        </div>
+                        <div class="form-group">
+                            <label>Mention Role ID (optional)</label>
+                            <input type="number" id="tiktokMentionRoleId" placeholder="123456789...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Check Interval (minutes)</label>
+                        <input type="number" id="tiktokCheckInterval" value="10" min="1">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Accounts to Monitor</h3>
+                    <div id="tiktokAccounts"></div>
+                    <button class="btn-add" onclick="addTiktokAccount()">Add Account</button>
+                </div>
+            </div>
+
+            <!-- XP Tab -->
+            <div class="tab-content" id="xp">
+                <h2>XP & Leveling</h2>
+                <div class="form-section">
+                    <h3>Message XP</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="xpMessageEnabled"> Enable Message XP
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cooldown (seconds)</label>
+                            <input type="number" id="xpMessageCooldown" value="60" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Base XP</label>
+                            <input type="number" id="xpMessageBaseXp" value="10" min="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Voice XP</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="xpVoiceEnabled"> Enable Voice XP
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>XP per Minute</label>
+                            <input type="number" id="xpVoiceXpPerMinute" value="5" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="xpVoiceRequireNotAlone"> Require not alone
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Level Formula</h3>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="xpLevelFormulaType">
+                            <option value="power">Power</option>
+                            <option value="linear">Linear</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Power Value</label>
+                        <input type="number" id="xpLevelFormulaPower" value="0.25" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Tab -->
+            <div class="tab-content" id="features">
+                <h2>Features</h2>
+                <div class="form-section">
+                    <h3>Sticky Messages</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="stickyEnabled"> Enable Sticky Messages
+                        </label>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Nicknames</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="nicknamesEnabled"> Enable Nicknames
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Cooldown (days)</label>
+                        <input type="number" id="nicknamesCooldown" value="14" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Length</label>
+                        <input type="number" id="nicknamesMaxLength" value="32" min="1">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Birthdays</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="birthdaysEnabled"> Enable Birthdays
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Announcement Channel ID</label>
+                            <input type="number" id="birthdaysAnnounceChannelId" placeholder="123456789...">
+                        </div>
+                        <div class="form-group">
+                            <label>Birthday Role ID</label>
+                            <input type="number" id="birthdaysRoleId" placeholder="123456789...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Announcement Message</label>
+                        <textarea id="birthdaysMessage">{mention}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Embed Builder Tab -->
+            <div class="tab-content" id="embed">
+                <h2>Welcome Embed Builder</h2>
+                <iframe src="/embed" style="width: 100%; height: 600px; border: none; border-radius: 5px;"></iframe>
+            </div>
+
+            <!-- Bot Control Tab -->
+            <div class="tab-content" id="control">
+                <h2>Bot Control</h2>
+                <div class="form-section">
+                    <h3>Bot API Configuration</h3>
+                    <div class="form-group">
+                        <label>Bot API URL (where bot is running)</label>
+                        <input type="text" id="botApiUrl" placeholder="http://localhost:8081 or https://your-bot-host.com:8081">
+                        <small>Leave blank to use http://localhost:8081</small>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3>Bot Status</h3>
+                    <div id="botStatus" style="padding: 15px; background: #f0f0f0; border-radius: 5px; margin-bottom: 15px;">
+                        <p><strong>Status:</strong> <span id="botStatusText">Checking...</span></p>
+                        <p id="botLatency" style="display: none;"><strong>Latency:</strong> <span id="botLatencyValue">-</span>ms</p>
+                        <p id="botName" style="display: none;"><strong>Bot Name:</strong> <span id="botNameValue">-</span></p>
+                    </div>
+                    <button onclick="checkBotHealth()" class="btn btn-save">🔄 Check Status</button>
+                </div>
+                <div class="form-section">
+                    <h3>Bot Management</h3>
+                    <p style="margin-bottom: 15px; color: #666;">Restart will gracefully shut down the bot. Your hosting platform will automatically restart it.</p>
+                    <button onclick="restartBot()" class="btn btn-restart" style="background: #ff9800; width: 100%; padding: 15px; font-size: 1.1em;">🔄 Restart Bot</button>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="button-group">
+                <button class="btn btn-save" onclick="saveConfig()">💾 Save Configuration</button>
+                <button class="btn btn-reset" onclick="loadConfig()">🔄 Reset Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Alert helper
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type} show`;
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        // Bot control functions
+        async function checkBotHealth() {
+            try {
+                const res = await fetch('/api/bot/health');
+                const health = await res.json();
+                const statusEl = document.getElementById('botStatusText');
+                
+                if (health.status === 'ok') {
+                    statusEl.innerHTML = '<span class="status-online">🟢 Online</span>';
+                    document.getElementById('botName').style.display = 'block';
+                    document.getElementById('botNameValue').textContent = health.bot_name || 'ArpadBot';
+                    document.getElementById('botLatency').style.display = 'block';
+                    document.getElementById('botLatencyValue').textContent = Math.round(health.latency * 1000);
+                } else {
+                    statusEl.innerHTML = '<span class="status-offline">🔴 Offline</span>';
+                    document.getElementById('botLatency').style.display = 'none';
+                    document.getElementById('botName').style.display = 'none';
+                }
+            } catch (err) {
+                document.getElementById('botStatusText').innerHTML = '<span class="status-offline">🔴 Offline (Cannot reach API)</span>';
+                document.getElementById('botLatency').style.display = 'none';
+                document.getElementById('botName').style.display = 'none';
+            }
+        }
+
+        async function restartBot() {
+            if (!confirm('Are you sure you want to restart the bot? It will go offline briefly.')) return;
+            try {
+                const res = await fetch('/api/bot/restart', { method: 'POST' });
+                if (res.ok) {
+                    showAlert('✅ Bot restart initiated! It will come back online shortly...', 'success');
+                    setTimeout(() => checkBotHealth(), 2000);
+                } else {
+                    showAlert('❌ Failed to restart: ' + (await res.text()), 'error');
+                }
+            } catch (err) {
+                showAlert('❌ Error: ' + err.message, 'error');
+            }
+        }
+
+        // Load config
+        async function loadConfig() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                const res = await fetch('/api/config');
+                const config = await res.json();
+
+                // General
+                document.getElementById('guildId').value = config.GUILD_ID || '';
+
+                // Channels
+                document.getElementById('welcomeChannelId').value = config.WELCOME_CHANNEL_ID || '';
+                document.getElementById('levelUpChannelId').value = config.LEVEL_UP_CHANNEL_ID || '';
+                document.getElementById('noXpChannelIds').value = (config.NO_XP_CHANNEL_IDS || []).join(',');
+                document.getElementById('noXpCategoryIds').value = (config.NO_XP_CATEGORY_IDS || []).join(',');
+                document.getElementById('autoRoleIds').value = (config.AUTO_ROLE_IDS || []).join(',');
+
+                // Level roles
+                const levelRoleContainer = document.getElementById('levelRoleMap');
+                levelRoleContainer.innerHTML = '';
+                Object.entries(config.LEVEL_ROLE_MAP || {}).forEach(([level, roleId]) => {
+                    addLevelRoleField(level, roleId);
+                });
+
+                // YouTube
+                const yt = config.youtube || {};
+                document.getElementById('youtubeEnabled').checked = yt.enabled || false;
+                document.getElementById('youtubeAnnounceChannelId').value = yt.announce_channel_id || '';
+                document.getElementById('youtubeMentionRoleId').value = yt.mention_role_id || '';
+                document.getElementById('youtubeApiKey').value = yt.api_key || '';
+                document.getElementById('youtubeCheckInterval').value = yt.check_interval_minutes || 5;
+
+                const ytChannelsContainer = document.getElementById('youtubeChannelIds');
+                ytChannelsContainer.innerHTML = '';
+                (yt.channel_ids || []).forEach(ch => {
+                    addYoutubeChannelField(ch);
+                });
+
+                // TikTok
+                const tt = config.tiktok || {};
+                document.getElementById('tiktokEnabled').checked = tt.enabled || false;
+                document.getElementById('tiktokAnnounceChannelId').value = tt.announce_channel_id || '';
+                document.getElementById('tiktokMentionRoleId').value = tt.mention_role_id || '';
+                document.getElementById('tiktokCheckInterval').value = tt.check_interval_minutes || 10;
+
+                const ttAccountsContainer = document.getElementById('tiktokAccounts');
+                ttAccountsContainer.innerHTML = '';
+                (tt.accounts || []).forEach((acc, idx) => {
+                    addTiktokAccountField(acc.display_name, acc.rss_url, acc.username, idx);
+                });
+
+                // XP
+                const xp = config.xp || {};
+                const xpMsg = xp.message || {};
+                const xpVoice = xp.voice || {};
+                document.getElementById('xpMessageEnabled').checked = xpMsg.enabled || false;
+                document.getElementById('xpMessageCooldown').value = xpMsg.cooldown_seconds || 60;
+                document.getElementById('xpMessageBaseXp').value = xpMsg.base_xp || 10;
+                document.getElementById('xpVoiceEnabled').checked = xpVoice.enabled || false;
+                document.getElementById('xpVoiceXpPerMinute').value = xpVoice.xp_per_minute || 5;
+                document.getElementById('xpVoiceRequireNotAlone').checked = xpVoice.require_not_alone || false;
+
+                const levelFormula = xp.level_formula || {};
+                document.getElementById('xpLevelFormulaType').value = levelFormula.type || 'power';
+                document.getElementById('xpLevelFormulaPower').value = levelFormula.power || 0.25;
+
+                // Features
+                document.getElementById('stickyEnabled').checked = config.sticky?.enabled || false;
+                document.getElementById('nicknamesEnabled').checked = config.nicknames?.enabled || false;
+                document.getElementById('nicknamesCooldown').value = config.nicknames?.cooldown_days || 14;
+                document.getElementById('nicknamesMaxLength').value = config.nicknames?.max_length || 32;
+                document.getElementById('birthdaysEnabled').checked = config.birthdays?.enabled || false;
+                document.getElementById('birthdaysAnnounceChannelId').value = config.birthdays?.announcement_channel_id || '';
+                document.getElementById('birthdaysRoleId').value = config.birthdays?.role_id || '';
+                document.getElementById('birthdaysMessage').value = config.birthdays?.announcement_message || '';
+
+                showAlert('Config loaded successfully', 'success');
+            } catch (err) {
+                showAlert('Failed to load config: ' + err.message, 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Save config
+        async function saveConfig() {
+            try {
+                const config = {
+                    BOT_TOKEN: document.getElementById('botToken').value || "PUT_BOT_TOKEN_HERE",
+                    GUILD_ID: parseInt(document.getElementById('guildId').value) || 0,
+                    WELCOME_CHANNEL_ID: parseInt(document.getElementById('welcomeChannelId').value) || 0,
+                    LEVEL_UP_CHANNEL_ID: parseInt(document.getElementById('levelUpChannelId').value) || 0,
+                    NO_XP_CHANNEL_IDS: document.getElementById('noXpChannelIds').value.split(',').map(x => x.trim()).filter(x => x).map(Number),
+                    NO_XP_CATEGORY_IDS: document.getElementById('noXpCategoryIds').value.split(',').map(x => x.trim()).filter(x => x).map(Number),
+                    AUTO_ROLE_IDS: document.getElementById('autoRoleIds').value.split(',').map(x => x.trim()).filter(x => x).map(Number),
+                    LEVEL_ROLE_MAP: getLevelRoles(),
+                    xp: {
+                        message: {
+                            enabled: document.getElementById('xpMessageEnabled').checked,
+                            cooldown_seconds: parseInt(document.getElementById('xpMessageCooldown').value),
+                            base_xp: parseInt(document.getElementById('xpMessageBaseXp').value),
+                        },
+                        voice: {
+                            enabled: document.getElementById('xpVoiceEnabled').checked,
+                            xp_per_minute: parseInt(document.getElementById('xpVoiceXpPerMinute').value),
+                            require_not_alone: document.getElementById('xpVoiceRequireNotAlone').checked,
+                        },
+                        level_formula: {
+                            type: document.getElementById('xpLevelFormulaType').value,
+                            power: parseFloat(document.getElementById('xpLevelFormulaPower').value),
+                        },
+                    },
+                    youtube: {
+                        enabled: document.getElementById('youtubeEnabled').checked,
+                        announce_channel_id: parseInt(document.getElementById('youtubeAnnounceChannelId').value) || 0,
+                        mention_role_id: parseInt(document.getElementById('youtubeMentionRoleId').value) || null,
+                        api_key: document.getElementById('youtubeApiKey').value || "PUT_YOUTUBE_DATA_API_KEY_HERE",
+                        check_interval_minutes: parseInt(document.getElementById('youtubeCheckInterval').value),
+                        channel_ids: getYoutubeChannels(),
+                    },
+                    tiktok: {
+                        enabled: document.getElementById('tiktokEnabled').checked,
+                        announce_channel_id: parseInt(document.getElementById('tiktokAnnounceChannelId').value) || 0,
+                        mention_role_id: parseInt(document.getElementById('tiktokMentionRoleId').value) || null,
+                        check_interval_minutes: parseInt(document.getElementById('tiktokCheckInterval').value),
+                        accounts: getTiktokAccounts(),
+                    },
+                    sticky: {
+                        enabled: document.getElementById('stickyEnabled').checked,
+                    },
+                    nicknames: {
+                        enabled: document.getElementById('nicknamesEnabled').checked,
+                        cooldown_days: parseInt(document.getElementById('nicknamesCooldown').value),
+                        max_length: parseInt(document.getElementById('nicknamesMaxLength').value),
+                    },
+                    birthdays: {
+                        enabled: document.getElementById('birthdaysEnabled').checked,
+                        announcement_channel_id: parseInt(document.getElementById('birthdaysAnnounceChannelId').value) || 0,
+                        role_id: parseInt(document.getElementById('birthdaysRoleId').value) || 0,
+                        announcement_message: document.getElementById('birthdaysMessage').value,
+                    },
+                };
+
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config),
+                });
+
+                if (!res.ok) throw new Error('Save failed');
+                showAlert('✅ Configuration saved successfully!', 'success');
+            } catch (err) {
+                showAlert('Failed to save: ' + err.message, 'error');
+            }
+        }
+
+        // Helper functions for arrays
+        function addLevelRole() {
+            addLevelRoleField('', '');
+        }
+        function addLevelRoleField(level, roleId) {
+            const container = document.getElementById('levelRoleMap');
+            const div = document.createElement('div');
+            div.className = 'array-item';
+            div.innerHTML = `
+                <input type="number" placeholder="Level" value="${level}" class="level-input">
+                <input type="number" placeholder="Role ID" value="${roleId}" class="role-input">
+                <button onclick="this.parentElement.remove()">Delete</button>
+            `;
+            container.appendChild(div);
+        }
+        function getLevelRoles() {
+            const roles = {};
+            document.querySelectorAll('#levelRoleMap .array-item').forEach(item => {
+                const level = item.querySelector('.level-input').value;
+                const roleId = item.querySelector('.role-input').value;
+                if (level && roleId) roles[level] = parseInt(roleId);
+            });
+            return roles;
+        }
+
+        function addYoutubeChannel() {
+            addYoutubeChannelField('');
+        }
+        function addYoutubeChannelField(channel) {
+            const container = document.getElementById('youtubeChannelIds');
+            const div = document.createElement('div');
+            div.className = 'array-item';
+            div.innerHTML = `
+                <input type="text" placeholder="UC..." value="${channel}" class="channel-input">
+                <button onclick="this.parentElement.remove()">Delete</button>
+            `;
+            container.appendChild(div);
+        }
+        function getYoutubeChannels() {
+            return Array.from(document.querySelectorAll('#youtubeChannelIds .channel-input')).map(i => i.value).filter(v => v);
+        }
+
+        function addTiktokAccount() {
+            addTiktokAccountField('', '', '', -1);
+        }
+        function addTiktokAccountField(name, rss, user, idx) {
+            const container = document.getElementById('tiktokAccounts');
+            const div = document.createElement('div');
+            div.className = 'form-section';
+            div.innerHTML = `
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" placeholder="e.g., example" value="${name}" class="tiktok-display-name">
+                </div>
+                <div class="form-group">
+                    <label>RSS URL</label>
+                    <input type="text" placeholder="https://rsshub.app/tiktok/user/@..." value="${rss}" class="tiktok-rss-url">
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" placeholder="@example" value="${user}" class="tiktok-username">
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: #dc3545; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;">Delete Account</button>
+            `;
+            container.appendChild(div);
+        }
+        function getTiktokAccounts() {
+            const accounts = [];
+            let idx = 0;
+            document.querySelectorAll('#tiktokAccounts .form-section').forEach(section => {
+                const name = section.querySelector('.tiktok-display-name').value;
+                const rss = section.querySelector('.tiktok-rss-url').value;
+                const user = section.querySelector('.tiktok-username').value;
+                if (name && rss) {
+                    accounts.push({
+                        display_name: name,
+                        rss_url: rss,
+                        username: user || '',
+                    });
+                }
+            });
+            return accounts;
+        }
+
+        // Initialize
+        loadConfig();
+        checkBotHealth();
+        setInterval(checkBotHealth, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>
