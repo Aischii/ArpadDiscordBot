@@ -70,43 +70,45 @@ This guide is specifically for deploying ArpadBot using **Azure for Students** (
 - Start your bot automatically
 - Auto-deploy whenever you push to `main` branch 🎉
 
-### Step 5: Enable Bot API & Dashboard
+### Step 5: Enable Dashboard & Bot API
 
 1. In left menu, click **"Configuration"**
-2. Add these settings:
+2. Add this setting:
    - Name: `WEBSITES_PORT` → Value: `8080`
 3. Click **Save**
 
-Your bot will now run at:
-- Bot: Running on Discord
-- Dashboard: `https://arpadbot.azurewebsites.net` (replace with your app name)
-- Bot API: `https://arpadbot.azurewebsites.net:8081`
+Your bot will now run with both dashboard and bot API on the same port (simplified single-service deployment).
 
 ### Step 6: Update Config
 
-Create a startup file to enable both bot API and dashboard:
+The bot is now configured for single-host Azure deployment (both dashboard and bot API on port 8080):
 
-1. In your local repo, update `config.json`:
+1. In your local repo, verify `config.json` has:
 ```json
 {
-  "bot_api": {
-    "enabled": true,
-    "port": 8081,
-    "url": "https://arpadbot.azurewebsites.net:8081"
-  },
   "dashboard": {
     "enabled": true,
     "port": 8080
+  },
+  "bot_api": {
+    "enabled": true,
+    "port": 8080,
+    "url": "https://arpadbot.azurewebsites.net"
   }
 }
 ```
 
-2. Commit and push:
+2. Update the `url` to match your Azure app name, then commit and push:
 ```bash
 git add config.json
 git commit -m "Configure for Azure deployment"
 git push origin main
 ```
+
+**Your bot will be accessible at:**
+- Dashboard: `https://arpadbot.azurewebsites.net`
+- Bot API: `https://arpadbot.azurewebsites.net/api/health`
+- Bot: Running on Discord 24/7
 
 Azure will auto-deploy in ~2 minutes!
 
