@@ -2,6 +2,11 @@
 
 This guide covers deploying ArpadBot and its web dashboard to different hosting platforms.
 
+## 🎓 Students with Azure Credits?
+**→ See [AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md) for an easy step-by-step guide!**
+
+---
+
 ## Architecture Overview
 
 - **Discord Bot**: Connects to Discord, runs cogs, handles messages/voice
