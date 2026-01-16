@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import datetime, timezone, timedelta
 from typing import Optional, Set, Dict, Any
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 import db
 import xp_utils
@@ -19,7 +18,7 @@ class CountingCog(commands.Cog):
     Simple counting game.
     - Only active in the configured counting channel.
     - Tracks current number and participants in-memory.
-    - Success grants XP to all participants (with optional powerup multiplier).
+    - Success grants XP to all participants.
     - Mistakes apply XP/level penalties.
     - Tracks counting milestones.
     """
@@ -28,7 +27,6 @@ class CountingCog(commands.Cog):
         self.bot = bot
         self.xp_config: Dict[str, Any] = bot.config.get("xp", {})
         self.milestone_config: Dict[str, Any] = bot.config.get("milestones", {})
-        self.powerup_config: Dict[str, Any] = bot.config.get("powerups", {}).get("counting_double_xp", {})
 
         counting_cfg = self.xp_config.get("counting", {})
         self.enabled = counting_cfg.get("enabled", True)
@@ -38,14 +36,6 @@ class CountingCog(commands.Cog):
         self.current_value: int = 0  # Expect next number to be current_value + 1 (starts at 1 after reset).
         self.last_user_id: Optional[int] = None
         self.participants: Set[int] = set()
-
-        # Powerup tracking
-        self.active_powerup_until: Optional[datetime] = None
-        self.last_notified_hour: Optional[str] = None  # YYYY-MM-DD-HH
-        self.powerup_check_loop.start()
-
-    def cog_unload(self) -> None:
-        self.powerup_check_loop.cancel()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -86,51 +76,6 @@ class CountingCog(commands.Cog):
         if self.current_value >= self.target:
             await self._handle_success_round(message.channel)
 
-    # ------------------ Powerup loop ------------------ #
-    @tasks.loop(minutes=1)
-    async def powerup_check_loop(self) -> None:
-        if not self.powerup_config.get("enabled", False):
-            return
-        if not self.channel_id:
-            return
-
-        now = datetime.now(tz=timezone.utc)
-        day_of_week = int(self.powerup_config.get("day_of_week", 0))
-        min_hour = int(self.powerup_config.get("min_start_hour", 0))
-        max_hour = int(self.powerup_config.get("max_start_hour", 23))
-        duration_minutes = int(self.powerup_config.get("duration_minutes", 60))
-
-        if now.weekday() != day_of_week:
-            self.active_powerup_until = None
-            return
-
-        if not (min_hour <= now.hour <= max_hour):
-            self.active_powerup_until = None
-            return
-
-        window_key = now.strftime("%Y-%m-%d-%H")
-        if self.active_powerup_until and now < self.active_powerup_until:
-            return  # already active
-
-        # Activate powerup for this hour window.
-        self.active_powerup_until = now + timedelta(minutes=duration_minutes)
-        if self.last_notified_hour == window_key:
-            return
-        self.last_notified_hour = window_key
-
-        channel = self.bot.get_channel(self.channel_id)
-        if channel and isinstance(channel, discord.TextChannel):
-            role_id = self.powerup_config.get("role_notify_id")
-            mention = f"<@&{role_id}>" if role_id else ""
-            await channel.send(
-                f"{mention} Counting powerup active! Double counting XP for the next {duration_minutes} minutes.",
-                allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False),
-            )
-
-    @powerup_check_loop.before_loop
-    async def before_powerup_check(self) -> None:
-        await self.bot.wait_until_ready()
-
     # ------------------ Helpers ------------------ #
     def _reset_round(self) -> None:
         self.current_value = 0
@@ -139,8 +84,6 @@ class CountingCog(commands.Cog):
 
     async def _handle_success_round(self, channel: discord.TextChannel) -> None:
         success_xp = xp_utils.get_counting_success_xp(self.xp_config)
-        if self._powerup_active():
-            success_xp *= 2
 
         leveling_cog = self.bot.get_cog("LevelingCog")
         guild = channel.guild
@@ -231,13 +174,6 @@ class CountingCog(commands.Cog):
                     color=discord.Color.purple(),
                 )
                 await source_channel.send(embed=embed, allowed_mentions=discord.AllowedMentions(users=True))
-
-    def _powerup_active(self) -> bool:
-        if not self.powerup_config.get("enabled", False):
-            return False
-        if not self.active_powerup_until:
-            return False
-        return datetime.now(tz=timezone.utc) < self.active_powerup_until
 
 
 async def setup(bot: commands.Bot) -> None:

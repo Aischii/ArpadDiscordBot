@@ -378,7 +378,6 @@ class LevelingCog(commands.Cog):
         user_data = db.get_user(member.id)
         previous_messages = int(user_data.get("total_messages", 0)) - 1  # Because we already incremented
 
-        leveled = self.bot.get_cog("LevelingCog")
         for threshold in thresholds:
             if previous_messages < threshold <= total_messages:
                 if reward_xp > 0:
@@ -404,10 +403,13 @@ class LevelingCog(commands.Cog):
 
         reset_hours = int(self.streak_config.get("reset_if_inactive_hours", 24))
         today_str = datetime.fromtimestamp(now_ts, tz=timezone.utc).strftime("%Y-%m-%d")
+        user_data = db.get_user(message.author.id)
+        previous_streak = int(user_data.get("current_streak_days", 0))
         streak = db.update_streak(message.author.id, today_str, reset_hours, last_message_ts=now_ts)
 
         target_days = int(self.streak_config.get("chat_streak_days", 0))
-        if target_days and streak == target_days:
+        # Notify only when crossing the target for the first time in a cycle.
+        if target_days and previous_streak < target_days <= streak:
             reward_xp = int(self.streak_config.get("reward_xp", 0))
             reward_role = self.streak_config.get("reward_role_id")
             if reward_xp > 0:

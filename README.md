@@ -3,9 +3,14 @@
 A Discord bot built with `discord.py` 2.x featuring:
 - Welcome webhook with template/embed modes
 - Config-driven leveling (message + voice XP), milestones, streaks, role rewards
-- Counting game with powerup window, penalties, and milestones
+- Counting game with penalties and milestones
 - SQLite persistence
 - Leaderboards
+- Sticky messages per channel
+- Birthdays: user-set birthdays with daily role + announcement, auto-removal after the day
+- YouTube/TikTok notifications via RSS polling
+  - YouTube: uploads + waiting rooms (upcoming) + live now (YouTube Data API)
+  - TikTok: latest posts via RSS; live detection (best effort)
 
 ## Project Layout
 ```
@@ -25,7 +30,7 @@ welcome_embed.json
 ```bash
 cp config.example.json config.json
 ```
-Populate `BOT_TOKEN`, guild/channel/role IDs, and tweak the `xp`, `milestones`, `streaks`, and `powerups` sections.
+Populate `BOT_TOKEN`, guild/channel/role IDs, and tweak the `xp`, `milestones`, and `streaks` sections.
 
 2) Create a virtualenv and install deps:
 ```bash
@@ -47,12 +52,29 @@ python bot.py
 - `!testwelcome [@user]` – Manage Server: fire welcome webhook
 
 ## Features to Configure
-- Welcome: `WELCOME_WEBHOOK_URL`, `TEMPLATE_MODE` and `welcome_embed.json` / `_build_embed`.
+- Welcome: `WELCOME_CHANNEL_ID`, `TEMPLATE_MODE` and `welcome_embed.json` / `_build_embed`.
 - Level roles: `LEVEL_ROLE_MAP`.
 - XP behavior: `xp.message`, `xp.voice`, `xp.counting`, `xp.level_formula`.
 - Milestones: `milestones.message_count`, `milestones.counting_rounds`.
 - Streaks: `streaks` block.
-- Counting powerup window: `powerups.counting_double_xp`.
+- Sticky messages: `sticky.enabled`, `sticky.channels` (channel_id + message lines).
+- YouTube notifications: enable `youtube.enabled`, set `youtube.channel_ids` (YouTube channel IDs), `youtube.announce_channel_id`, optional `youtube.mention_role_id`, and `youtube.check_interval_minutes`.
+- TikTok notifications: enable `tiktok.enabled`, set `tiktok.accounts` with `rss_url` (e.g. via RSSHub) and optional `display_name`, plus `tiktok.announce_channel_id`, optional `tiktok.mention_role_id`, and `tiktok.check_interval_minutes`.
+
+### Getting YouTube channel IDs
+Open the channel page and extract the ID from the URL or use the advanced settings; RSS feed will be fetched from `https://www.youtube.com/feeds/videos.xml?channel_id=<ID>`.
+
+### TikTok RSS
+### YouTube Live & Waiting Rooms
+- Requires a YouTube Data API key in `youtube.api_key`.
+- The bot polls `eventType=upcoming` to announce new waiting rooms and `eventType=live` to announce when a channel goes live.
+- Set `youtube.channel_ids`, `youtube.announce_channel_id`, optional `youtube.mention_role_id`, and `youtube.check_interval_minutes`.
+
+### TikTok Live Detection
+- TikTok doesn't provide an official API; the bot checks `https://www.tiktok.com/@<username>/live` for `isLive` indicators.
+- Add `username` to each `tiktok.accounts` entry to enable live checks.
+- Announcements fire when transitioning from not-live to live.
+TikTok does not provide an official feed. Use a trusted RSS proxy (e.g. RSSHub) and put its `rss_url` in the config. Example: `https://rsshub.app/tiktok/user/@example`.
 
 ## GitHub Setup
 1) Initialize Git (if not already):

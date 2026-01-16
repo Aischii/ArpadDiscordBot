@@ -1,7 +1,7 @@
 {
   "BOT_TOKEN": "PUT_BOT_TOKEN_HERE",
   "GUILD_ID": 123456789012345678,
-  "WELCOME_WEBHOOK_URL": "https://discord.com/api/webhooks/...",
+  "WELCOME_CHANNEL_ID": 123456789012345678,
   "LEVEL_UP_CHANNEL_ID": 123456789012345678,
 
   "NO_XP_CHANNEL_IDS": [111111111111111111],
@@ -19,6 +19,7 @@
     "40": 131313131313131313,
     "50": 141414141414141414
   },
+  "AUTO_ROLE_IDS": [],
 
   "xp": {
     "message": {
@@ -89,14 +90,67 @@
     "page_size": 10,
     "allow_server_wide": true
   },
-  "powerups": {
-    "counting_double_xp": {
-      "enabled": true,
-      "role_notify_id": 888888888888888888,
-      "day_of_week": 0,
-      "min_start_hour": 0,
-      "max_start_hour": 23,
-      "duration_minutes": 60
-    }
+  "sticky": {
+    "enabled": true,
+    "channels": [
+      {
+        "channel_id": 123456789012345678,
+        "message": [
+          "🇮🇩 Indonesian",
+          "Hai semuanya! Selamat datang ya!! (example text, I will edit)",
+          "",
+          "🇬🇧 English",
+          "Hi everyone! Welcome! (example text, I will edit)",
+          "",
+          "Name              :",
+          "Username Youtube  :",
+          "Gender            :",
+          "Country           :",
+          "Hobby             :",
+          "Quotes            :"
+        ]
+      }
+    ]
+  },
+  "nicknames": {
+    "enabled": true,
+    "command_name": "nick",
+    "cooldown_days": 14,
+    "max_length": 32,
+    "allow_reset_to_username": true,
+    "allowed_roles_to_bypass_cooldown": []
+  },
+  "birthdays": {
+    "enabled": true,
+    "command_name": "birthday",
+    "announcement_channel_id": 123456789012345678,
+    "role_id": 123456789012345678,
+    "announcement_message": "Happy Birthday {mention}! 🎂",
+    "check_time_utc": "09:00",
+    "timezone_offset_hours": 7
+  }
+  ,
+  "youtube": {
+    "enabled": true,
+    "announce_channel_id": 123456789012345678,
+    "mention_role_id": null,
+    "api_key": "PUT_YOUTUBE_DATA_API_KEY_HERE",
+    "check_interval_minutes": 5,
+    "channel_ids": [
+      "UCXXXXXXXXXXXXXXXXXXXXXXXX" 
+    ]
+  },
+  "tiktok": {
+    "enabled": false,
+    "announce_channel_id": 123456789012345678,
+    "mention_role_id": null,
+    "check_interval_minutes": 10,
+    "accounts": [
+      {
+        "display_name": "example",
+        "rss_url": "https://rsshub.app/tiktok/user/@example",
+        "username": "example"
+      }
+    ]
   }
 }

@@ -45,7 +45,60 @@ def _init_db() -> None:
                 "counting_success_rounds": "INTEGER DEFAULT 0",
                 "current_streak_days": "INTEGER DEFAULT 0",
                 "last_active_day": "TEXT DEFAULT NULL",
+                "last_nick_change_ts": "INTEGER DEFAULT 0",
             },
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sticky_messages (
+                channel_id TEXT PRIMARY KEY,
+                message_id TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS birthdays (
+                user_id TEXT PRIMARY KEY,
+                month INTEGER NOT NULL,
+                day INTEGER NOT NULL,
+                year INTEGER,
+                last_granted_year INTEGER DEFAULT 0
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS youtube_last (
+                channel_id TEXT PRIMARY KEY,
+                last_video_id TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tiktok_last (
+                feed_key TEXT PRIMARY KEY,
+                last_item_id TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS youtube_live_last (
+                channel_id TEXT PRIMARY KEY,
+                last_upcoming_id TEXT,
+                last_live_id TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tiktok_live_state (
+                username TEXT PRIMARY KEY,
+                is_live INTEGER DEFAULT 0
+            )
+            """
         )
         conn.commit()
 
@@ -223,3 +276,196 @@ def get_top_users_by(column_name: str, limit: int) -> list[tuple[str, int]]:
             (limit,),
         )
         return [(row["user_id"], int(row["value"])) for row in cur.fetchall()]
+
+
+# ---------------- Sticky helpers ---------------- #
+def get_sticky_message_id(channel_id: int | str) -> Optional[str]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT message_id FROM sticky_messages WHERE channel_id = ?", (str(channel_id),))
+        row = cur.fetchone()
+        return row["message_id"] if row else None
+
+
+def set_sticky_message_id(channel_id: int | str, message_id: str) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO sticky_messages (channel_id, message_id)
+            VALUES (?, ?)
+            ON CONFLICT(channel_id) DO UPDATE SET message_id = excluded.message_id
+            """,
+            (str(channel_id), message_id),
+        )
+        conn.commit()
+
+
+def clear_sticky_message_id(channel_id: int | str) -> None:
+    with _get_connection() as conn:
+        conn.execute("DELETE FROM sticky_messages WHERE channel_id = ?", (str(channel_id),))
+        conn.commit()
+
+
+# ---------------- Nickname helpers ---------------- #
+def get_last_nick_change(user_id: int | str) -> int:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT last_nick_change_ts FROM users WHERE user_id = ?", (str(user_id),))
+        row = cur.fetchone()
+        return int(row["last_nick_change_ts"]) if row else 0
+
+
+def set_last_nick_change(user_id: int | str, ts: int) -> None:
+    with _get_connection() as conn:
+        conn.execute("UPDATE users SET last_nick_change_ts = ? WHERE user_id = ?", (int(ts), str(user_id)))
+        conn.commit()
+
+
+# ---------------- Birthday helpers ---------------- #
+def set_birthday(user_id: int | str, month: int, day: int, year: Optional[int]) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO birthdays (user_id, month, day, year, last_granted_year)
+            VALUES (?, ?, ?, ?, 0)
+            ON CONFLICT(user_id) DO UPDATE SET
+                month=excluded.month,
+                day=excluded.day,
+                year=excluded.year,
+                last_granted_year=0
+            """,
+            (str(user_id), month, day, year),
+        )
+        conn.commit()
+
+
+def clear_birthday(user_id: int | str) -> None:
+    with _get_connection() as conn:
+        conn.execute("DELETE FROM birthdays WHERE user_id = ?", (str(user_id),))
+        conn.commit()
+
+
+def get_birthday(user_id: int | str) -> Optional[Dict[str, Any]]:
+    with _get_connection() as conn:
+        cur = conn.execute(
+            "SELECT user_id, month, day, year, last_granted_year FROM birthdays WHERE user_id = ?",
+            (str(user_id),),
+        )
+        row = cur.fetchone()
+        return _row_to_dict(row) if row else None
+
+
+def list_birthdays() -> list[Dict[str, Any]]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT user_id, month, day, year, last_granted_year FROM birthdays")
+        return [_row_to_dict(row) for row in cur.fetchall()]
+
+
+def set_birthday_granted_year(user_id: int | str, year: int) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            "UPDATE birthdays SET last_granted_year = ? WHERE user_id = ?",
+            (int(year), str(user_id)),
+        )
+        conn.commit()
+
+
+# ---------------- Social notifications persistence ---------------- #
+def get_last_youtube_video(channel_id: str) -> Optional[str]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT last_video_id FROM youtube_last WHERE channel_id = ?", (channel_id,))
+        row = cur.fetchone()
+        return row["last_video_id"] if row else None
+
+
+def set_last_youtube_video(channel_id: str, video_id: str) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO youtube_last (channel_id, last_video_id)
+            VALUES (?, ?)
+            ON CONFLICT(channel_id) DO UPDATE SET last_video_id = excluded.last_video_id
+            """,
+            (channel_id, video_id),
+        )
+        conn.commit()
+
+
+def get_last_tiktok_item(feed_key: str) -> Optional[str]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT last_item_id FROM tiktok_last WHERE feed_key = ?", (feed_key,))
+        row = cur.fetchone()
+        return row["last_item_id"] if row else None
+
+
+def set_last_tiktok_item(feed_key: str, item_id: str) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO tiktok_last (feed_key, last_item_id)
+            VALUES (?, ?)
+            ON CONFLICT(feed_key) DO UPDATE SET last_item_id = excluded.last_item_id
+            """,
+            (feed_key, item_id),
+        )
+        conn.commit()
+
+
+def get_last_youtube_upcoming(channel_id: str) -> Optional[str]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT last_upcoming_id FROM youtube_live_last WHERE channel_id = ?", (channel_id,))
+        row = cur.fetchone()
+        return row["last_upcoming_id"] if row else None
+
+
+def set_last_youtube_upcoming(channel_id: str, video_id: str) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO youtube_live_last (channel_id, last_upcoming_id)
+            VALUES (?, ?)
+            ON CONFLICT(channel_id) DO UPDATE SET last_upcoming_id = excluded.last_upcoming_id
+            """,
+            (channel_id, video_id),
+        )
+        conn.commit()
+
+
+def get_last_youtube_live(channel_id: str) -> Optional[str]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT last_live_id FROM youtube_live_last WHERE channel_id = ?", (channel_id,))
+        row = cur.fetchone()
+        return row["last_live_id"] if row else None
+
+
+def set_last_youtube_live(channel_id: str, video_id: str) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO youtube_live_last (channel_id, last_live_id)
+            VALUES (?, ?)
+            ON CONFLICT(channel_id) DO UPDATE SET last_live_id = excluded.last_live_id
+            """,
+            (channel_id, video_id),
+        )
+        conn.commit()
+
+
+def get_tiktok_live_state(username: str) -> Optional[bool]:
+    with _get_connection() as conn:
+        cur = conn.execute("SELECT is_live FROM tiktok_live_state WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        return bool(int(row["is_live"]))
+
+
+def set_tiktok_live_state(username: str, is_live: bool) -> None:
+    with _get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO tiktok_live_state (username, is_live)
+            VALUES (?, ?)
+            ON CONFLICT(username) DO UPDATE SET is_live = excluded.is_live
+            """,
+            (username, 1 if is_live else 0),
+        )
+        conn.commit()

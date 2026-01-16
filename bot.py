@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+import os
 
 import discord
 from discord.ext import commands
@@ -35,6 +36,17 @@ class ArpadBot(commands.Bot):
         await self.load_extension("cogs.welcome")
         await self.load_extension("cogs.leveling")
         await self.load_extension("cogs.counting")
+        await self.load_extension("cogs.sticky")
+        await self.load_extension("cogs.nickname")
+        await self.load_extension("cogs.birthday")
+        try:
+            await self.load_extension("cogs.youtube_notify")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to load YouTube cog: %s", exc)
+        try:
+            await self.load_extension("cogs.tiktok_notify")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to load TikTok cog: %s", exc)
         # Leaderboard and other future cogs can be added here.
 
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError) -> None:
@@ -44,7 +56,7 @@ class ArpadBot(commands.Bot):
 
 def main() -> None:
     config = load_config()
-    token = config.get("BOT_TOKEN")
+    token = os.environ.get("BOT_TOKEN") or config.get("BOT_TOKEN")
     if not token or token == "PUT_BOT_TOKEN_HERE":
         raise ValueError("BOT_TOKEN is missing or still set to the placeholder.")
 

@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-import aiohttp
 import discord
 from discord.ext import commands
 
@@ -27,37 +26,69 @@ class WelcomeCog(commands.Cog):
         if guild_id and member.guild.id != guild_id:
             return
 
-        webhook_url = self.bot.config.get("WELCOME_WEBHOOK_URL")
-        if not webhook_url:
-            logger.warning("WELCOME_WEBHOOK_URL is not configured.")
+        channel = self._get_welcome_channel(member.guild)
+        if not channel:
+            logger.warning("No welcome channel configured or available.")
             return
 
         try:
-            await self._send_welcome_webhook(member, webhook_url)
+            await self._apply_auto_roles(member)
+            await self._send_welcome_message(member, channel)
         except Exception as exc:  # noqa: BLE001
-            logger.exception("Failed to send welcome webhook: %s", exc)
+            logger.exception("Failed to send welcome message: %s", exc)
 
-    async def _send_welcome_webhook(self, member: discord.Member, webhook_url: str) -> None:
-        async with aiohttp.ClientSession() as session:
-            webhook = discord.Webhook.from_url(webhook_url, session=session)
-            if TEMPLATE_MODE.lower() == "json":
-                payload = self._load_template_payload(member)
-                embeds_data = payload.get("embeds", [])
-                embeds = [discord.Embed.from_dict(embed) for embed in embeds_data]
-                await webhook.send(
-                    content=payload.get("content"),
-                    username=payload.get("username"),
-                    avatar_url=payload.get("avatar_url"),
-                    embeds=embeds,
-                    allowed_mentions=discord.AllowedMentions(users=True),
-                )
-            else:
-                embed = self._build_embed(member)
-                await webhook.send(
-                    content=f"Welcome, {member.mention}!",
-                    embeds=[embed],
-                    allowed_mentions=discord.AllowedMentions(users=True),
-                )
+    def _get_welcome_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
+        channel_id = self.bot.config.get("WELCOME_CHANNEL_ID")
+        if channel_id:
+            channel = guild.get_channel(channel_id)
+            if isinstance(channel, discord.TextChannel):
+                return channel
+        return guild.system_channel if isinstance(guild.system_channel, discord.TextChannel) else None
+
+    async def _send_welcome_message(self, member: discord.Member, channel: discord.TextChannel) -> None:
+        if TEMPLATE_MODE.lower() == "json":
+            payload = self._load_template_payload(member)
+            embeds_data = payload.get("embeds", [])
+            embeds = [discord.Embed.from_dict(embed) for embed in embeds_data]
+            await channel.send(
+                content=payload.get("content") or f"Welcome, {member.mention}!",
+                embeds=embeds,
+                allowed_mentions=discord.AllowedMentions(users=True),
+            )
+        else:
+            embed = self._build_embed(member)
+            await channel.send(
+                content=f"Welcome, {member.mention}!",
+                embeds=[embed],
+                allowed_mentions=discord.AllowedMentions(users=True),
+            )
+
+    async def _apply_auto_roles(self, member: discord.Member) -> None:
+        """Assign configured auto-roles to new members."""
+        role_ids = self.bot.config.get("AUTO_ROLE_IDS") or []
+        if not role_ids:
+            return
+
+        guild_me = member.guild.me
+        if not guild_me or not guild_me.guild_permissions.manage_roles:
+            logger.warning("Bot lacks Manage Roles permission; cannot apply auto roles.")
+            return
+
+        roles_to_add = []
+        for role_id in role_ids:
+            role = member.guild.get_role(int(role_id))
+            if role and role not in member.roles and role < guild_me.top_role:
+                roles_to_add.append(role)
+
+        if not roles_to_add:
+            return
+
+        try:
+            await member.add_roles(*roles_to_add, reason="Auto role on join")
+        except discord.Forbidden:
+            logger.warning("Missing permissions to add auto roles for %s", member)
+        except discord.HTTPException as exc:
+            logger.error("Failed to add auto roles for %s: %s", member, exc)
 
     def _load_template_payload(self, member: discord.Member) -> Dict[str, Any]:
         if not WELCOME_TEMPLATE_PATH.exists():
@@ -106,7 +137,7 @@ class WelcomeCog(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def test_welcome(self, ctx: commands.Context, member: Optional[discord.Member] = None) -> None:
         """
-        Manually trigger the welcome webhook for testing.
+        Manually trigger the welcome message for testing.
         Defaults to the caller if no member is provided.
         """
         target = member or ctx.author
@@ -115,13 +146,13 @@ class WelcomeCog(commands.Cog):
             await ctx.send("This command only works in the configured guild.")
             return
 
-        webhook_url = self.bot.config.get("WELCOME_WEBHOOK_URL")
-        if not webhook_url:
-            await ctx.send("WELCOME_WEBHOOK_URL is not configured.")
+        channel = self._get_welcome_channel(ctx.guild) if ctx.guild else None
+        if not channel:
+            await ctx.send("No welcome channel configured.")
             return
 
-        await self._send_welcome_webhook(target, webhook_url)
-        await ctx.send(f"Sent welcome webhook for {target.mention}.", allowed_mentions=discord.AllowedMentions(users=True))
+        await self._send_welcome_message(target, channel)
+        await ctx.send(f"Sent welcome message for {target.mention}.", allowed_mentions=discord.AllowedMentions(users=True))
 
     @test_welcome.error
     async def test_welcome_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
