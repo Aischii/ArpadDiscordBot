@@ -1,3 +1,0 @@
-module.exports=[95767,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(24680);a.n(d("[project]/ArpadBot/dashboard/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},11527,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(24680);a.n(d("[project]/ArpadBot/dashboard/node_modules/next/dist/client/components/builtin/global-error.js"))},99085,a=>{"use strict";a.i(95767);var b=a.i(11527);a.n(b)}];
-
-//# sourceMappingURL=8b815_next_dist_client_components_builtin_global-error_44cc708a.js.map

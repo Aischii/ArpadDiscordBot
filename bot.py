@@ -40,17 +40,20 @@ def set_bot_instance(bot: commands.Bot) -> None:
 
 @api_app.get("/")
 async def root():
-    """Serve the Next.js dashboard HTML."""
-    try:
-        return FileResponse("dashboard/.next/server/app/index.html", media_type="text/html")
-    except:
-        return {"error": "Dashboard not available"}
+    """Serve the lightweight dashboard built with plain HTML/JS (no Next.js build needed)."""
+    tpl_path = Path("templates/index.html")
+    if tpl_path.exists():
+        return FileResponse(tpl_path, media_type="text/html")
+    return {"error": "Dashboard not available"}
 
 
 @api_app.get("/embed")
 async def embed_page():
-    """Serve the embed builder page."""
-    return await root()
+    """Serve the embed builder page (plain HTML/JS)."""
+    tpl_path = Path("templates/embed.html")
+    if tpl_path.exists():
+        return FileResponse(tpl_path, media_type="text/html")
+    return {"error": "Embed builder not available"}
 
 
 @api_app.get("/api/health")
