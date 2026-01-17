@@ -545,11 +545,28 @@
             setTimeout(() => alert.classList.remove('show'), 3000);
         }
 
+        // API helper (respects custom Bot API URL field)
+        function getApiBase() {
+            const input = document.getElementById('botApiUrl');
+            const val = (input?.value || '').trim();
+            return val ? val.replace(/\/$/, '') : '';
+        }
+
+        async function apiFetch(path, options = {}) {
+            const base = getApiBase();
+            const url = `${base}${path}`;
+            const res = await fetch(url, options);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`HTTP ${res.status}: ${text}`);
+            }
+            return res.headers.get('content-type')?.includes('application/json') ? res.json() : res.text();
+        }
+
         // Bot control functions
         async function checkBotHealth() {
             try {
-                const res = await fetch('/api/bot/health');
-                const health = await res.json();
+                const health = await apiFetch('/api/health');
                 const statusEl = document.getElementById('botStatusText');
                 
                 if (health.status === 'ok') {
@@ -573,13 +590,9 @@
         async function restartBot() {
             if (!confirm('Are you sure you want to restart the bot? It will go offline briefly.')) return;
             try {
-                const res = await fetch('/api/bot/restart', { method: 'POST' });
-                if (res.ok) {
-                    showAlert('✅ Bot restart initiated! It will come back online shortly...', 'success');
-                    setTimeout(() => checkBotHealth(), 2000);
-                } else {
-                    showAlert('❌ Failed to restart: ' + (await res.text()), 'error');
-                }
+                await apiFetch('/api/restart', { method: 'POST' });
+                showAlert('✅ Bot restart initiated! It will come back online shortly...', 'success');
+                setTimeout(() => checkBotHealth(), 2000);
             } catch (err) {
                 showAlert('❌ Error: ' + err.message, 'error');
             }
@@ -589,8 +602,7 @@
         async function loadConfig() {
             try {
                 document.getElementById('loading').style.display = 'block';
-                const res = await fetch('/api/config');
-                const config = await res.json();
+                const config = await apiFetch('/api/config');
 
                 // General
                 document.getElementById('guildId').value = config.GUILD_ID || '';
@@ -728,13 +740,11 @@
                     },
                 };
 
-                const res = await fetch('/api/config', {
+                await apiFetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config),
                 });
-
-                if (!res.ok) throw new Error('Save failed');
                 showAlert('✅ Configuration saved successfully!', 'success');
             } catch (err) {
                 showAlert('Failed to save: ' + err.message, 'error');
@@ -827,8 +837,18 @@
 
         // Initialize
         loadConfig();
+        // Persist bot API base between sessions
+        const apiInput = document.getElementById('botApiUrl');
+        if (apiInput) {
+            apiInput.value = localStorage.getItem('botApiUrl') || '';
+            apiInput.addEventListener('change', () => {
+                localStorage.setItem('botApiUrl', apiInput.value.trim());
+                checkBotHealth();
+            });
+        }
+
         checkBotHealth();
-        setInterval(checkBotHealth, 30000); // Check every 30 seconds
+        setInterval(checkBotHealth, 15000); // Check every 15 seconds
     </script>
 </body>
 </html>

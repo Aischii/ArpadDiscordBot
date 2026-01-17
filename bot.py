@@ -115,24 +115,33 @@ async def update_config(data: dict):
 async def get_embed():
     """Fetch embeds - returns a structure with embed keys like youtube_notification, welcome_message, etc."""
     embed_path = Path("welcome_embed.json")
+    default_payload = {
+        "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
+        "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
+        "tiktok_notification": {"title": "", "description": "", "color": "#000000", "fields": []},
+        "birthday_message": {"title": "", "description": "", "color": "#FFD700", "fields": []},
+        "levelup_message": {"title": "", "description": "", "color": "#00FF00", "fields": []},
+        "help_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
+        "sticky_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
+        "xp_level_message": {"title": "", "description": "", "color": "#00B8D9", "fields": []},
+    }
+
     if not embed_path.exists():
-        return {
-            "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
-            "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
-            "tiktok_notification": {"title": "", "description": "", "color": "#000000", "fields": []},
-            "birthday_message": {"title": "", "description": "", "color": "#FFD700", "fields": []},
-            "levelup_message": {"title": "", "description": "", "color": "#00FF00", "fields": []},
-        }
+        return default_payload
     
     try:
         with embed_path.open() as fp:
             data = json.load(fp)
+            # If stored with templates, return them directly
+            if isinstance(data, dict) and "_templates" in data:
+                merged = {**default_payload, **data.get("_templates", {})}
+                return merged
             # Convert from old format to new format if needed
             if "embeds" in data and isinstance(data["embeds"], list) and len(data["embeds"]) > 0:
                 first_embed = data["embeds"][0]
                 # Convert color from decimal to hex
                 color_hex = f"#{first_embed.get('color', 5865522):06x}" if isinstance(first_embed.get('color'), int) else first_embed.get('color', '#5865F2')
-                return {
+                converted = {
                     "welcome_message": {
                         "title": first_embed.get("title", ""),
                         "description": first_embed.get("description", ""),
@@ -143,17 +152,14 @@ async def get_embed():
                         "footer": first_embed.get("footer"),
                         "author": first_embed.get("author"),
                     },
-                    "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
-                    "tiktok_notification": {"title": "", "description": "", "color": "#000000", "fields": []},
-                    "birthday_message": {"title": "", "description": "", "color": "#FFD700", "fields": []},
-                    "levelup_message": {"title": "", "description": "", "color": "#00FF00", "fields": []},
                 }
-            return data
+                merged = {**default_payload, **converted}
+                return merged
+            merged = {**default_payload, **data} if isinstance(data, dict) else default_payload
+            return merged
     except Exception as e:
         logger.error("Failed to load embed: %s", e)
-        return {
-            "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
-        }
+        return default_payload
 
 
 @api_app.post("/api/embed")
@@ -161,18 +167,15 @@ async def save_embed(data: dict):
     """Save embeds to welcome_embed.json."""
     try:
         embed_path = Path("welcome_embed.json")
-        
-        # Convert from new format back to Discord webhook format
-        embeds_to_save = {}
-        
-        # For now, prioritize welcome_message as the main embed
+        embeds_to_save: dict = {}
+
+        # Convert welcome_message into webhook-style payload for the welcome feature
         if "welcome_message" in data and data["welcome_message"]:
             embed_data = data["welcome_message"]
-            # Convert color from hex to decimal if needed
             color = embed_data.get("color", "#5865F2")
             if isinstance(color, str) and color.startswith("#"):
                 color = int(color[1:], 16)
-            
+
             embeds_to_save = {
                 "content": "Welcome, {{user_mention}}!",
                 "username": "Árpád the Cat",
@@ -189,9 +192,12 @@ async def save_embed(data: dict):
                         "author": embed_data.get("author"),
                     }
                 ],
-                "attachments": []
+                "attachments": [],
             }
-        
+
+        # Persist all templates for the dashboard (including non-welcome embeds)
+        embeds_to_save["_templates"] = data
+
         with embed_path.open("w") as fp:
             json.dump(embeds_to_save, fp, indent=2)
         logger.info("Embed saved via dashboard")

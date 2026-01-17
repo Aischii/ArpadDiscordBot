@@ -200,6 +200,19 @@
             <h2>Editor</h2>
 
             <div class="form-group">
+                <label>Embed Type</label>
+                <select id="embedType" onchange="loadEmbed()">
+                    <option value="welcome_message">Welcome Message</option>
+                    <option value="levelup_message">XP / Level Up</option>
+                    <option value="help_message">Help Message</option>
+                    <option value="youtube_notification">YouTube Notification</option>
+                    <option value="tiktok_notification">TikTok Notification</option>
+                    <option value="sticky_message">Sticky Message</option>
+                    <option value="birthday_message">Birthday Message</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Title</label>
                 <input type="text" id="embedTitle" placeholder="Welcome to our server!" oninput="updatePreview()">
             </div>
@@ -404,9 +417,13 @@
             });
         }
 
+        function getSelectedKey() {
+            return document.getElementById('embedType').value;
+        }
+
         async function saveEmbed() {
             try {
-                const data = getEmbedData();
+                const data = { [getSelectedKey()]: getEmbedData().embeds[0] };
                 const res = await fetch('/api/embed', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -423,14 +440,18 @@
             try {
                 const res = await fetch('/api/embed');
                 const data = await res.json();
-                if (!data.embeds || data.embeds.length === 0) {
-                    showAlert('No embed found', 'error');
+                const embed = data[getSelectedKey()];
+                if (!embed) {
+                    showAlert('No embed found for this type', 'error');
                     return;
                 }
-                const embed = data.embeds[0];
                 document.getElementById('embedTitle').value = embed.title || '';
                 document.getElementById('embedDescription').value = embed.description || '';
-                document.getElementById('embedColor').value = '#' + embed.color.toString(16).padStart(6, '0');
+                if (typeof embed.color === 'number') {
+                    document.getElementById('embedColor').value = '#' + embed.color.toString(16).padStart(6, '0');
+                } else {
+                    document.getElementById('embedColor').value = embed.color || '#5865F2';
+                }
                 if (embed.image) document.getElementById('embedImage').value = embed.image.url;
                 if (embed.thumbnail) document.getElementById('embedThumbnail').value = embed.thumbnail.url;
                 if (embed.author) {
