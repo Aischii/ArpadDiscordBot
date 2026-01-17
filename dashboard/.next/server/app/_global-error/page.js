@@ -1,0 +1,11 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__3d0f5689._.js")
+R.c("server/chunks/ssr/ArpadBot_dashboard_e401779e._.js")
+R.c("server/chunks/ssr/8b815_next_dist_faaaebce._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__bb7dec9d._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1704e1c8._.js")
+R.c("server/chunks/ssr/8b815_next_dist_d00332a6._.js")
+R.c("server/chunks/ssr/ArpadBot_dashboard_app_e46d0615._.js")
+R.c("server/chunks/ssr/ArpadBot_dashboard__next-internal_server_app__global-error_page_actions_e41495e5.js")
+R.m(45902)
+module.exports=R.m(45902).exports

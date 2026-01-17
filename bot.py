@@ -7,9 +7,11 @@ import sys
 import discord
 from discord.ext import commands
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import threading
 import uvicorn
+import aiohttp
 
 # Configure logging early so cogs can use it.
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -18,14 +20,29 @@ logger = logging.getLogger("bot")
 CONFIG_PATH = Path("config.json")
 
 
-# Create FastAPI app for bot control API
-api_app = FastAPI(title="ArpadBot API")
+# Create FastAPI app for combined bot control API + dashboard
+api_app = FastAPI(title="ArpadBot")
 _bot_instance = None  # Will hold reference to bot
 
 
 def set_bot_instance(bot: commands.Bot) -> None:
     global _bot_instance
     _bot_instance = bot
+
+
+@api_app.get("/")
+async def root():
+    """Serve the Next.js dashboard HTML."""
+    try:
+        return FileResponse("dashboard/.next/server/app/index.html", media_type="text/html")
+    except:
+        return {"error": "Dashboard not available"}
+
+
+@api_app.get("/embed")
+async def embed_page():
+    """Serve the embed builder page."""
+    return await root()
 
 
 @api_app.get("/api/health")
@@ -58,6 +75,53 @@ def load_config() -> dict:
         raise FileNotFoundError("config.json is missing. Copy config.example.json and fill in your values.")
     with CONFIG_PATH.open() as fp:
         return json.load(fp)
+
+
+def save_config(config: dict) -> None:
+    with CONFIG_PATH.open("w") as fp:
+        json.dump(config, fp, indent=2)
+
+
+@api_app.get("/api/config")
+async def get_config():
+    """Fetch current config."""
+    return load_config()
+
+
+@api_app.post("/api/config")
+async def update_config(data: dict):
+    """Update config and save to file."""
+    try:
+        save_config(data)
+        logger.info("Config updated via dashboard")
+        return {"status": "ok", "message": "Config saved successfully"}
+    except Exception as e:
+        logger.exception("Failed to save config: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to save: {e}")
+
+
+@api_app.get("/api/embed")
+async def get_embed():
+    """Fetch current welcome embed from welcome_embed.json."""
+    embed_path = Path("welcome_embed.json")
+    if not embed_path.exists():
+        return {"embeds": []}
+    with embed_path.open() as fp:
+        return json.load(fp)
+
+
+@api_app.post("/api/embed")
+async def save_embed(data: dict):
+    """Save embed to welcome_embed.json."""
+    try:
+        embed_path = Path("welcome_embed.json")
+        with embed_path.open("w") as fp:
+            json.dump(data, fp, indent=2)
+        logger.info("Embed saved via dashboard")
+        return {"status": "ok", "message": "Embed saved successfully"}
+    except Exception as e:
+        logger.exception("Failed to save embed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to save: {e}")
 
 
 class ArpadBot(commands.Bot):
@@ -103,38 +167,33 @@ def main() -> None:
     bot = ArpadBot(config)
     set_bot_instance(bot)
     
-    # Start bot API server in a background thread (for restart & health checks)
+    # Mount Next.js static files
+    dashboard_public = Path("dashboard/public")
+    dashboard_static = Path("dashboard/.next/static")
+    
+    if dashboard_public.exists():
+        api_app.mount("/public", StaticFiles(directory=str(dashboard_public)), name="public")
+    
+    if dashboard_static.exists():
+        api_app.mount("/_next", StaticFiles(directory=str(dashboard_static)), name="static")
+    
+    # Start combined web server (API + Dashboard) in a background thread
     api_enabled = config.get("bot_api", {}).get("enabled", False)
-    if api_enabled:
-        api_port = config.get("bot_api", {}).get("port", 8081)
-        def run_api():
+    dashboard_enabled = config.get("dashboard", {}).get("enabled", False)
+    
+    if api_enabled or dashboard_enabled:
+        port = config.get("dashboard", {}).get("port", 8080)
+        def run_server():
             uvicorn.run(
                 api_app,
                 host="0.0.0.0",
-                port=api_port,
+                port=port,
                 log_level="warning",
                 access_log=False,
             )
-        api_thread = threading.Thread(target=run_api, daemon=True)
-        api_thread.start()
-        logger.info("Bot API started on port %d", api_port)
-    
-    # Start web dashboard in a background thread (optional)
-    dashboard_enabled = config.get("dashboard", {}).get("enabled", False)
-    if dashboard_enabled:
-        dashboard_port = config.get("dashboard", {}).get("port", 8080)
-        def run_dashboard():
-            import dashboard
-            uvicorn.run(
-                dashboard.app,
-                host="0.0.0.0",
-                port=dashboard_port,
-                log_level="warning",
-                access_log=False,
-            )
-        dashboard_thread = threading.Thread(target=run_dashboard, daemon=True)
-        dashboard_thread.start()
-        logger.info("Dashboard started on port %d", dashboard_port)
+        server_thread = threading.Thread(target=run_server, daemon=True)
+        server_thread.start()
+        logger.info("Server started on port %d (Dashboard + Bot API combined)", port)
     
     bot.run(token)
 
