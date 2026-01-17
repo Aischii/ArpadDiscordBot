@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import threading
 import uvicorn
 import aiohttp
@@ -23,6 +23,15 @@ CONFIG_PATH = Path("config.json")
 # Create FastAPI app for combined bot control API + dashboard
 api_app = FastAPI(title="ArpadBot")
 _bot_instance = None  # Will hold reference to bot
+
+# Add CORS middleware to allow requests from the frontend
+api_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins in development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def set_bot_instance(bot: commands.Bot) -> None:
