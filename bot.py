@@ -102,21 +102,87 @@ async def update_config(data: dict):
 
 @api_app.get("/api/embed")
 async def get_embed():
-    """Fetch current welcome embed from welcome_embed.json."""
+    """Fetch embeds - returns a structure with embed keys like youtube_notification, welcome_message, etc."""
     embed_path = Path("welcome_embed.json")
     if not embed_path.exists():
-        return {"embeds": []}
-    with embed_path.open() as fp:
-        return json.load(fp)
+        return {
+            "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
+            "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
+            "tiktok_notification": {"title": "", "description": "", "color": "#000000", "fields": []},
+            "birthday_message": {"title": "", "description": "", "color": "#FFD700", "fields": []},
+            "levelup_message": {"title": "", "description": "", "color": "#00FF00", "fields": []},
+        }
+    
+    try:
+        with embed_path.open() as fp:
+            data = json.load(fp)
+            # Convert from old format to new format if needed
+            if "embeds" in data and isinstance(data["embeds"], list) and len(data["embeds"]) > 0:
+                first_embed = data["embeds"][0]
+                # Convert color from decimal to hex
+                color_hex = f"#{first_embed.get('color', 5865522):06x}" if isinstance(first_embed.get('color'), int) else first_embed.get('color', '#5865F2')
+                return {
+                    "welcome_message": {
+                        "title": first_embed.get("title", ""),
+                        "description": first_embed.get("description", ""),
+                        "color": color_hex,
+                        "fields": first_embed.get("fields", []),
+                        "image": first_embed.get("image"),
+                        "thumbnail": first_embed.get("thumbnail"),
+                        "footer": first_embed.get("footer"),
+                        "author": first_embed.get("author"),
+                    },
+                    "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
+                    "tiktok_notification": {"title": "", "description": "", "color": "#000000", "fields": []},
+                    "birthday_message": {"title": "", "description": "", "color": "#FFD700", "fields": []},
+                    "levelup_message": {"title": "", "description": "", "color": "#00FF00", "fields": []},
+                }
+            return data
+    except Exception as e:
+        logger.error("Failed to load embed: %s", e)
+        return {
+            "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
+        }
 
 
 @api_app.post("/api/embed")
 async def save_embed(data: dict):
-    """Save embed to welcome_embed.json."""
+    """Save embeds to welcome_embed.json."""
     try:
         embed_path = Path("welcome_embed.json")
+        
+        # Convert from new format back to Discord webhook format
+        embeds_to_save = {}
+        
+        # For now, prioritize welcome_message as the main embed
+        if "welcome_message" in data and data["welcome_message"]:
+            embed_data = data["welcome_message"]
+            # Convert color from hex to decimal if needed
+            color = embed_data.get("color", "#5865F2")
+            if isinstance(color, str) and color.startswith("#"):
+                color = int(color[1:], 16)
+            
+            embeds_to_save = {
+                "content": "Welcome, {{user_mention}}!",
+                "username": "Árpád the Cat",
+                "avatar_url": "",
+                "embeds": [
+                    {
+                        "title": embed_data.get("title", ""),
+                        "description": embed_data.get("description", ""),
+                        "color": color,
+                        "fields": embed_data.get("fields", []),
+                        "image": embed_data.get("image"),
+                        "thumbnail": embed_data.get("thumbnail"),
+                        "footer": embed_data.get("footer"),
+                        "author": embed_data.get("author"),
+                    }
+                ],
+                "attachments": []
+            }
+        
         with embed_path.open("w") as fp:
-            json.dump(data, fp, indent=2)
+            json.dump(embeds_to_save, fp, indent=2)
         logger.info("Embed saved via dashboard")
         return {"status": "ok", "message": "Embed saved successfully"}
     except Exception as e:
@@ -166,16 +232,6 @@ def main() -> None:
 
     bot = ArpadBot(config)
     set_bot_instance(bot)
-    
-    # Mount Next.js static files
-    dashboard_public = Path("dashboard/public")
-    dashboard_static = Path("dashboard/.next/static")
-    
-    if dashboard_public.exists():
-        api_app.mount("/public", StaticFiles(directory=str(dashboard_public)), name="public")
-    
-    if dashboard_static.exists():
-        api_app.mount("/_next", StaticFiles(directory=str(dashboard_static)), name="static")
     
     # Start combined web server (API + Dashboard) in a background thread
     api_enabled = config.get("bot_api", {}).get("enabled", False)
