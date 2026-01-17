@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import List, Optional, Any, Dict
 
 import discord
 from discord.ext import commands

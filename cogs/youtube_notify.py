@@ -11,7 +11,6 @@ try:
     import aiohttp
 except Exception:  # noqa: BLE001
     aiohttp = None  # type: ignore
-
 from pathlib import Path
 import xml.etree.ElementTree as ET
 

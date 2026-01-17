@@ -7,11 +7,10 @@ import sys
 import discord
 from discord.ext import commands
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import threading
 import uvicorn
-import aiohttp
 
 # Configure logging early so cogs can use it.
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

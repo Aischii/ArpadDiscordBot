@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Dict, Optional, Iterable, Any, List, Tuple
+from typing import Dict, Optional, Any, List, Tuple
 
 import discord
 from discord.ext import commands, tasks
