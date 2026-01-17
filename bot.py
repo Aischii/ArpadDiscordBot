@@ -114,7 +114,7 @@ async def update_config(data: dict):
 @api_app.get("/api/embed")
 async def get_embed():
     """Fetch embeds - returns a structure with embed keys like youtube_notification, welcome_message, etc."""
-    embed_path = Path("welcome_embed.json")
+    embed_path = Path("embeds.json")
     default_payload = {
         "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
         "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
@@ -164,9 +164,9 @@ async def get_embed():
 
 @api_app.post("/api/embed")
 async def save_embed(data: dict):
-    """Save embeds to welcome_embed.json."""
+    """Save embeds to embeds.json."""
     try:
-        embed_path = Path("welcome_embed.json")
+        embed_path = Path("embeds.json")
         embeds_to_save: dict = {}
 
         # Convert welcome_message into webhook-style payload for the welcome feature

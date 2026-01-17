@@ -8,10 +8,10 @@ from typing import Dict, Any, Optional
 import discord
 from discord.ext import commands
 
-# Switch between "json" to load a Discohook-like payload from welcome_embed.json
+# Switch between "json" to load a Discohook-like payload from embeds.json
 # or "embed" to use the Python-built embed below.
 TEMPLATE_MODE = "json"
-WELCOME_TEMPLATE_PATH = Path("welcome_embed.json")
+WELCOME_TEMPLATE_PATH = Path("embeds.json")
 
 logger = logging.getLogger(__name__)
 

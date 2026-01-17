@@ -22,7 +22,7 @@ cogs/
   welcome.py
   leveling.py
   counting.py
-welcome_embed.json
+embeds.json
 ```
 
 ## Quick Start
@@ -52,7 +52,7 @@ python bot.py
 - `!testwelcome [@user]` – Manage Server: fire welcome webhook
 
 ## Features to Configure
-- Welcome: `WELCOME_CHANNEL_ID`, `TEMPLATE_MODE` and `welcome_embed.json` / `_build_embed`.
+- Welcome: `WELCOME_CHANNEL_ID`, `TEMPLATE_MODE` and `embeds.json` / `_build_embed`.
 - Level roles: `LEVEL_ROLE_MAP`.
 - XP behavior: `xp.message`, `xp.voice`, `xp.counting`, `xp.level_formula`.
 - Milestones: `milestones.message_count`, `milestones.counting_rounds`.
@@ -93,7 +93,7 @@ git push -u origin main
 3) Keep `config.json` private. Commit `config.example.json`; add `config.json` to `.gitignore`.
 
 ## Deploying
-- Zip upload: `zip -r arpadbot.zip bot.py db.py xp_utils.py config.example.json config.json cogs welcome_embed.json -x "*/__pycache__/*" ".venv/*" "data.db"`
+- Zip upload: `zip -r arpadbot.zip bot.py db.py xp_utils.py config.example.json config.json cogs embeds.json -x "*/__pycache__/*" ".venv/*" "data.db"`
 - On host: unzip, create venv, `pip install discord.py aiohttp`, add real `config.json`, run `python bot.py`.
 
 For containerized deploys, add a `Dockerfile` later; entrypoint is `python bot.py`.

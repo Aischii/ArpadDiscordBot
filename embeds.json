@@ -1,0 +1,268 @@
+{
+  "content": "Welcome, {{user_mention}}!",
+  "username": "Árpád the Cat",
+  "avatar_url": "https://cdn.discordapp.com/attachments/911272846167277638/1444699591403507774/32b1cdb846ef3d81ab2bda685e82bfe7.png?ex=692da8d7&is=692c5757&hm=73baa55894b0886d1d757467c5dea12ca07c189cd087c5da0d95d20eca9772a5&",
+  "embeds": [
+    {
+      "title": "Welcome to OWL, you people.",
+      "description": "What is this? Of course it's a welcome message you dumb.\n\nI hope your enjoy being in this server, basically it's like other server, a place to communicate with other people, and a place for you that enjoy my content. Have fun exploring if there's something to explore.\n\nDon't forget to check the rules on <#972906572017696828>, but I don't think you're going to see it, even this text as well.\n\nAnyway, the last message is just tagging you {{user_mention}}, and after this there's nothing.\n\nNah I'm lying, use this link if you want to invite your friends here https://discord.gg/9KxAsanBWa. Thank you for joining and reading this until the end.",
+      "color": 16771845,
+      "image": {
+        "url": "https://media.discordapp.net/attachments/911272846167277638/1444703340322885632/Expression_B_1.jpg?ex=692dac55&is=692c5ad5&hm=23a9e1fd94796804207427fd647358159d42ee287561437835fc55493461b605&=&format=webp&width=1552&height=873"
+      },
+      "thumbnail": {
+        "url": "https://media.discordapp.net/attachments/911272846167277638/1273724866503376896/Tak_berjudul278_20240520134218.png?ex=692d4378&is=692bf1f8&hm=43264772679c308ec049779f3b8317e6a0885e87071b9e406f98da0fb461b746&=&format=webp&quality=lossless&width=273&height=350"
+      }
+    }
+  ],
+  "attachments": [],
+  "_templates": {
+    "welcome_message": {
+      "title": "Welcome to OWL, you people.",
+      "description": "What is this? Of course it's a welcome message you dumb.\n\nI hope your enjoy being in this server, basically it's like other server, a place to communicate with other people, and a place for you that enjoy my content. Have fun exploring if there's something to explore.\n\nDon't forget to check the rules on <#972906572017696828>, but I don't think you're going to see it, even this text as well.\n\nAnyway, the last message is just tagging you {{user_mention}}, and after this there's nothing.\n\nNah I'm lying, use this link if you want to invite your friends here https://discord.gg/9KxAsanBWa. Thank you for joining and reading this until the end.",
+      "color": "#FFF555",
+      "fields": [],
+      "image": {
+        "url": "https://media.discordapp.net/attachments/911272846167277638/1444703340322885632/Expression_B_1.jpg?ex=692dac55&is=692c5ad5&hm=23a9e1fd94796804207427fd647358159d42ee287561437835fc55493461b605&=&format=webp&width=1552&height=873"
+      },
+      "thumbnail": {
+        "url": "https://media.discordapp.net/attachments/911272846167277638/1273724866503376896/Tak_berjudul278_20240520134218.png?ex=692d4378&is=692bf1f8&hm=43264772679c308ec049779f3b8317e6a0885e87071b9e406f98da0fb461b746&=&format=webp&quality=lossless&width=273&height=350"
+      }
+    },
+    "levelup_message": {
+      "title": "🎉 Level Up!",
+      "description": "Congratulations {{user_mention}}!\n\nYou've reached level **{{level}}**! 🌟\n\nKeep chatting and participating to climb even higher!",
+      "color": "#00B8D9",
+      "fields": [
+        {
+          "name": "Current Level",
+          "value": "{{level}}",
+          "inline": true
+        },
+        {
+          "name": "Total XP",
+          "value": "{{xp}}",
+          "inline": true
+        }
+      ]
+    },
+    "xp_level_message": {
+      "title": "✨ XP Earned",
+      "description": "Great job {{user_mention}}!\n\nYou earned **{{xp}} XP** for this action.",
+      "color": "#00D4FF",
+      "fields": []
+    },
+    "birthday_message": {
+      "title": "🎂 Happy Birthday!",
+      "description": "Everyone, let's celebrate {{user_mention}}'s birthday today! 🎉\n\nHave a wonderful day filled with joy and happiness!",
+      "color": "#FFD700",
+      "fields": []
+    },
+    "help_message": {
+      "title": "📚 Commands & Help",
+      "description": "Welcome to the help guide! Here are some useful commands:",
+      "color": "#5865F2",
+      "fields": [
+        {
+          "name": "!rank [@user]",
+          "value": "View your or another user's rank and stats",
+          "inline": false
+        },
+        {
+          "name": "!setxp @user <amount>",
+          "value": "Admin: Set a user's XP amount",
+          "inline": false
+        },
+        {
+          "name": "!birthday MM-DD or MM-DD-YYYY",
+          "value": "Set your birthday (clear to remove)",
+          "inline": false
+        },
+        {
+          "name": "!nick <nickname>",
+          "value": "Change your nickname (with cooldown)",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "Use !help for more information"
+      }
+    },
+    "youtube_notification_scheduled": {
+      "title": "📅 Upcoming Stream Scheduled",
+      "description": "**[VIDEO TITLE HERE]**\n\nStream scheduled to start: {{scheduled_time}}\n\nChannel: {{channel_name}}",
+      "color": "#FF0000",
+      "fields": [
+        {
+          "name": "Scheduled Start Time",
+          "value": "{{scheduled_time}}",
+          "inline": true
+        },
+        {
+          "name": "Watch Link",
+          "value": "[Click here]({{video_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{thumbnail_url}}"
+      },
+      "footer": {
+        "text": "YouTube Notification • {{channel_name}}"
+      }
+    },
+    "youtube_notification_live": {
+      "title": "🔴 LIVE NOW!",
+      "description": "**[VIDEO TITLE HERE]** is now live!\n\nChannel: {{channel_name}}\n\n**[WATCH NOW]({{video_url}})**",
+      "color": "#FF0000",
+      "fields": [
+        {
+          "name": "Status",
+          "value": "🟢 Live Streaming",
+          "inline": true
+        },
+        {
+          "name": "Duration",
+          "value": "{{duration}}",
+          "inline": true
+        },
+        {
+          "name": "Watch Here",
+          "value": "[Click to join the stream]({{video_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{thumbnail_url}}"
+      },
+      "footer": {
+        "text": "YouTube Live • {{channel_name}}"
+      }
+    },
+    "youtube_notification_upload": {
+      "title": "🎥 New Video Uploaded",
+      "description": "**[VIDEO TITLE HERE]**\n\nChannel: {{channel_name}}\n\nVideo is now available to watch!",
+      "color": "#FF0000",
+      "fields": [
+        {
+          "name": "Duration",
+          "value": "{{duration}}",
+          "inline": true
+        },
+        {
+          "name": "Published",
+          "value": "{{published_time}}",
+          "inline": true
+        },
+        {
+          "name": "Watch Now",
+          "value": "[Click to watch]({{video_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{thumbnail_url}}"
+      },
+      "footer": {
+        "text": "YouTube • {{channel_name}}"
+      }
+    },
+    "tiktok_notification_scheduled": {
+      "title": "📅 Upcoming TikTok Live",
+      "description": "**{{creator_name}}** has scheduled a live session!\n\nScheduled for: {{scheduled_time}}",
+      "color": "#000000",
+      "fields": [
+        {
+          "name": "Creator",
+          "value": "{{creator_name}}",
+          "inline": true
+        },
+        {
+          "name": "Scheduled Time",
+          "value": "{{scheduled_time}}",
+          "inline": true
+        },
+        {
+          "name": "Join When Live",
+          "value": "[Click here]({{profile_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{profile_image}}"
+      }
+    },
+    "tiktok_notification_live": {
+      "title": "🔴 LIVE NOW on TikTok!",
+      "description": "**{{creator_name}}** is now live on TikTok!\n\n**[WATCH NOW]({{live_url}})**",
+      "color": "#000000",
+      "fields": [
+        {
+          "name": "Creator",
+          "value": "{{creator_name}}",
+          "inline": true
+        },
+        {
+          "name": "Status",
+          "value": "🟢 Streaming Live",
+          "inline": true
+        },
+        {
+          "name": "Viewers",
+          "value": "{{viewer_count}}",
+          "inline": true
+        },
+        {
+          "name": "Join the Live",
+          "value": "[Click to watch]({{live_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{profile_image}}"
+      }
+    },
+    "tiktok_notification_newpost": {
+      "title": "🎵 New TikTok Post",
+      "description": "**{{creator_name}}** posted a new video!\n\n**[WATCH]({{post_url}})**",
+      "color": "#000000",
+      "fields": [
+        {
+          "name": "Creator",
+          "value": "{{creator_name}}",
+          "inline": true
+        },
+        {
+          "name": "Posted",
+          "value": "{{posted_time}}",
+          "inline": true
+        },
+        {
+          "name": "View Post",
+          "value": "[Click here]({{post_url}})",
+          "inline": false
+        }
+      ],
+      "thumbnail": {
+        "url": "{{thumbnail_url}}"
+      }
+    },
+    "sticky_message": {
+      "title": "📌 Server Info",
+      "description": "Welcome! This is a sticky message that stays pinned to the channel.\n\nFeel free to chat and ask questions!",
+      "color": "#5865F2",
+      "fields": [
+        {
+          "name": "Rules",
+          "value": "Please follow server rules and be respectful",
+          "inline": false
+        },
+        {
+          "name": "Support",
+          "value": "Need help? Ask moderators or check the documentation",
+          "inline": false
+        }
+      ]
+    }
+  }
+}
