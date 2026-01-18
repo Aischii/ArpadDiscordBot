@@ -1,0 +1,20 @@
+[Unit]
+Description=Arpad Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=arpadbot
+Group=arpadbot
+WorkingDirectory=/opt/arpadbot
+EnvironmentFile=/etc/arpadbot.env
+ExecStart=/opt/arpadbot/.venv/bin/python /opt/arpadbot/main.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
