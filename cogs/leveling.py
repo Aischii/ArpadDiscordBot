@@ -310,6 +310,43 @@ class LevelingCog(commands.Cog):
         if not channel:
             return
 
+        # Try to load embed from embeds.json
+        from bot import load_embed_template
+        
+        template = load_embed_template("levelup_message", {
+            "{{user_mention}}": member.mention,
+            "{{level}}": str(new_level),
+            "{{xp}}": str(new_total_xp)
+        })
+        
+        if template:
+            # Convert template to discord.Embed
+            try:
+                color_str = template.get("color", "#00B8D9")
+                if isinstance(color_str, str) and color_str.startswith("#"):
+                    color_int = int(color_str[1:], 16)
+                else:
+                    color_int = int(color_str) if isinstance(color_str, int) else 3674329
+                
+                embed = discord.Embed(
+                    title=template.get("title", "🎉 Level Up!"),
+                    description=template.get("description", ""),
+                    color=color_int
+                )
+                
+                for field in template.get("fields", []):
+                    embed.add_field(
+                        name=field.get("name", ""),
+                        value=field.get("value", ""),
+                        inline=field.get("inline", False)
+                    )
+                
+                await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions(users=True))
+                return
+            except Exception as exc:
+                logger.warning("Failed to send levelup embed: %s, falling back to default", exc)
+        
+        # Fallback to default embed
         embed = discord.Embed(
             title="Level Up!",
             description=f"Kerennn, {member.mention} levelmu sekarang sudah naik ke level **{new_level}**!",

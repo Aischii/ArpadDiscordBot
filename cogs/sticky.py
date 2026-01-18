@@ -94,6 +94,45 @@ class StickyCog(commands.Cog):
         await self._post_sticky(channel, lines)
 
     async def _post_sticky(self, channel: discord.TextChannel, lines: List[str]) -> None:
+        from bot import load_embed_template
+        
+        # Try to load embed template first
+        template = load_embed_template("sticky_message")
+        
+        if template:
+            try:
+                color_str = template.get("color", "#5865F2")
+                if isinstance(color_str, str) and color_str.startswith("#"):
+                    color_int = int(color_str[1:], 16)
+                else:
+                    color_int = int(color_str) if isinstance(color_str, int) else 5865522
+                
+                embed = discord.Embed(
+                    title=template.get("title", "📌 Server Info"),
+                    description=template.get("description", ""),
+                    color=color_int
+                )
+                
+                for field in template.get("fields", []):
+                    embed.add_field(
+                        name=field.get("name", ""),
+                        value=field.get("value", ""),
+                        inline=field.get("inline", False)
+                    )
+                
+                try:
+                    sent = await channel.send(embed=embed)
+                    db.set_sticky_message_id(channel.id, str(sent.id))
+                    return
+                except discord.Forbidden:
+                    logger.warning("Missing permissions to post sticky embed in %s", channel.id)
+                    return
+                except discord.HTTPException as exc:
+                    logger.error("Failed to post sticky embed in %s: %s", channel.id, exc)
+            except Exception as exc:
+                logger.warning("Failed to use sticky embed template: %s, falling back to text", exc)
+        
+        # Fallback to text-based sticky message
         content = "\n".join(lines)
         try:
             sent = await channel.send(content)

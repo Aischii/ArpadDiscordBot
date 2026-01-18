@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 import os
 import sys
+import copy
 
 import discord
 from discord.ext import commands
@@ -11,6 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import threading
 import uvicorn
+from typing import Optional
 
 # Configure logging early so cogs can use it.
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -268,6 +270,131 @@ async def save_embed(data: dict):
         raise HTTPException(status_code=500, detail=f"Failed to save: {e}")
 
 
+class CustomHelpCommand(commands.HelpCommand):
+    """Custom help command that uses an embed from embeds.json."""
+    
+    async def send_bot_help(self, mapping):
+        """Send the bot help embed."""
+        embed = await self._get_help_embed()
+        await self.get_destination().send(embed=embed)
+    
+    async def send_command_help(self, command):
+        """Send help for a specific command."""
+        embed = await self._get_help_embed()
+        await self.get_destination().send(embed=embed)
+    
+    async def send_group_help(self, group):
+        """Send help for a command group."""
+        embed = await self._get_help_embed()
+        await self.get_destination().send(embed=embed)
+    
+    async def send_cog_help(self, cog):
+        """Send help for a cog."""
+        embed = await self._get_help_embed()
+        await self.get_destination().send(embed=embed)
+    
+    async def _get_help_embed(self) -> discord.Embed:
+        """Load and format the help embed from embeds.json."""
+        embed_path = Path("embeds.json")
+        default_embed = discord.Embed(
+            title="📚 Commands & Help",
+            description="Welcome to the help guide! Here are some useful commands:",
+            color=discord.Color.blurple()
+        )
+        default_embed.add_field(name="!rank [@user]", value="View your or another user's rank and stats", inline=False)
+        default_embed.add_field(name="!setxp @user <amount>", value="Admin: Set a user's XP amount", inline=False)
+        default_embed.add_field(name="!birthday MM-DD or MM-DD-YYYY", value="Set your birthday (clear to remove)", inline=False)
+        default_embed.add_field(name="!nick <nickname>", value="Change your nickname (with cooldown)", inline=False)
+        default_embed.set_footer(text="Use !help for more information")
+        
+        if not embed_path.exists():
+            return default_embed
+        
+        try:
+            with embed_path.open() as fp:
+                data = json.load(fp)
+                templates = data.get("_templates", {})
+                help_data = templates.get("help_message", {})
+            
+            # Create embed from the stored template
+            color_str = help_data.get("color", "#5865F2")
+            if isinstance(color_str, str) and color_str.startswith("#"):
+                color_int = int(color_str[1:], 16)
+            else:
+                color_int = int(color_str) if isinstance(color_str, int) else 5865522
+            
+            embed = discord.Embed(
+                title=help_data.get("title", "📚 Commands & Help"),
+                description=help_data.get("description", "Welcome to the help guide!"),
+                color=color_int
+            )
+            
+            # Add fields
+            for field in help_data.get("fields", []):
+                embed.add_field(
+                    name=field.get("name", ""),
+                    value=field.get("value", ""),
+                    inline=field.get("inline", False)
+                )
+            
+            # Add footer if present
+            footer_data = help_data.get("footer")
+            if footer_data:
+                embed.set_footer(text=footer_data.get("text", "Use !help for more information"))
+            
+            return embed
+        except Exception as e:
+            logger.error("Failed to load help embed from embeds.json: %s", e)
+            return default_embed
+
+
+def load_embed_template(template_name: str, replacements: Optional[dict] = None) -> Optional[dict]:
+    """Load and optionally substitute variables in an embed template from embeds.json.
+    
+    Args:
+        template_name: The name of the embed template (e.g., 'levelup_message')
+        replacements: Dict of {placeholder: value} to substitute (e.g., {'{{user_mention}}': '@user', '{{level}}': '5'})
+    
+    Returns:
+        Dictionary representation of the embed, or None if not found.
+    """
+    embed_path = Path("embeds.json")
+    if not embed_path.exists():
+        return None
+    
+    try:
+        with embed_path.open() as fp:
+            data = json.load(fp)
+            templates = data.get("_templates", {})
+            template = templates.get(template_name)
+            
+            if not template:
+                return None
+            
+            # Deep copy to avoid modifying the original
+            embed_copy = copy.deepcopy(template)
+            
+            # Perform replacements if provided
+            if replacements:
+                def replace_in_dict(obj):
+                    if isinstance(obj, str):
+                        for placeholder, value in replacements.items():
+                            obj = obj.replace(placeholder, str(value))
+                        return obj
+                    elif isinstance(obj, dict):
+                        return {k: replace_in_dict(v) for k, v in obj.items()}
+                    elif isinstance(obj, list):
+                        return [replace_in_dict(item) for item in obj]
+                    return obj
+                
+                embed_copy = replace_in_dict(embed_copy)
+            
+            return embed_copy
+    except Exception as e:
+        logger.error("Failed to load embed template '%s': %s", template_name, e)
+        return None
+
+
 class ArpadBot(commands.Bot):
     def __init__(self, config: dict) -> None:
         intents = discord.Intents.default()
@@ -276,7 +403,7 @@ class ArpadBot(commands.Bot):
         intents.guilds = True
         intents.voice_states = True
 
-        super().__init__(command_prefix="!", intents=intents)
+        super().__init__(command_prefix="!", intents=intents, help_command=CustomHelpCommand())
         self.config = config
 
     async def setup_hook(self) -> None:

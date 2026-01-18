@@ -87,8 +87,15 @@ class TikTokNotifyCog(commands.Cog):
                 if last_seen == latest_id:
                     continue
                 set_last_tiktok_item(rss_url, latest_id)
-                msg = f"{mention_prefix}New TikTok post from {display_name}: {latest_link or ''}"
-                await announce_channel.send(msg.strip())
+                await self._send_tiktok_embed(
+                    announce_channel,
+                    "tiktok_notification_newpost",
+                    {
+                        "{{creator_name}}": display_name,
+                        "{{post_url}}": latest_link or ""
+                    },
+                    mention_prefix
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.exception("TikTok check failed for %s: %s", rss_url, exc)
                 continue
@@ -100,8 +107,14 @@ class TikTokNotifyCog(commands.Cog):
                     prev = get_tiktok_live_state(username)
                     if live and not prev:
                         set_tiktok_live_state(username, True)
-                        await announce_channel.send(
-                            f"{mention_prefix}{display_name} is LIVE now: https://www.tiktok.com/@{username}/live"
+                        await self._send_tiktok_embed(
+                            announce_channel,
+                            "tiktok_notification_live",
+                            {
+                                "{{creator_name}}": display_name,
+                                "{{live_url}}": f"https://www.tiktok.com/@{username}/live"
+                            },
+                            mention_prefix
                         )
                     elif live is False and prev:
                         set_tiktok_live_state(username, False)
@@ -184,6 +197,56 @@ class TikTokNotifyCog(commands.Cog):
                 self._session = None
         except Exception:  # noqa: BLE001
             pass
+
+    async def _send_tiktok_embed(self, channel: discord.TextChannel, template_name: str,
+                                  replacements: dict, mention_prefix: str) -> None:
+        """Send a TikTok notification using embed template or fallback to text."""
+        from bot import load_embed_template
+        
+        template = load_embed_template(template_name, replacements)
+        
+        if template:
+            try:
+                color_str = template.get("color", "#000000")
+                if isinstance(color_str, str) and color_str.startswith("#"):
+                    color_int = int(color_str[1:], 16)
+                else:
+                    color_int = int(color_str) if isinstance(color_str, int) else 0
+                
+                embed = discord.Embed(
+                    title=template.get("title", "TikTok Notification"),
+                    description=template.get("description", ""),
+                    color=color_int
+                )
+                
+                for field in template.get("fields", []):
+                    embed.add_field(
+                        name=field.get("name", ""),
+                        value=field.get("value", ""),
+                        inline=field.get("inline", False)
+                    )
+                
+                footer_data = template.get("footer")
+                if footer_data:
+                    embed.set_footer(text=footer_data.get("text", ""))
+                
+                thumbnail = template.get("thumbnail")
+                if thumbnail and isinstance(thumbnail, dict) and thumbnail.get("url"):
+                    embed.set_thumbnail(url=thumbnail.get("url"))
+                
+                await channel.send(mention_prefix.strip() and f"{mention_prefix}", embed=embed)
+                return
+            except Exception as exc:
+                logger.warning("Failed to send TikTok embed for %s: %s, falling back to text", template_name, exc)
+        
+        # Fallback: send basic text notification
+        default_msg = {
+            "tiktok_notification_newpost": "New TikTok post",
+            "tiktok_notification_scheduled": "TikTok live scheduled",
+            "tiktok_notification_live": "TikTok is LIVE now"
+        }.get(template_name, "TikTok notification")
+        
+        await channel.send(f"{mention_prefix}{default_msg}")
 
 
 async def setup(bot: commands.Bot) -> None:

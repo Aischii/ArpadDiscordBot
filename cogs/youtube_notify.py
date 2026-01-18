@@ -83,7 +83,12 @@ class YouTubeNotifyCog(commands.Cog):
                     continue
                 set_last_youtube_video(cid, latest)
                 video_url = f"https://www.youtube.com/watch?v={latest}"
-                await announce_channel.send(f"{mention_prefix}New YouTube upload: {video_url}")
+                await self._send_youtube_embed(
+                    announce_channel,
+                    "youtube_notification_upload",
+                    {"{{video_url}}": video_url},
+                    mention_prefix
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.exception("YouTube check failed for %s: %s", cid, exc)
                 continue
@@ -97,10 +102,16 @@ class YouTubeNotifyCog(commands.Cog):
                         set_last_youtube_upcoming(cid, upcoming_id)
                         details = await self._fetch_live_details([upcoming_id], api_key)
                         scheduled = details.get(upcoming_id, {}).get("scheduledStartTime")
-                        msg = f"{mention_prefix}YouTube waiting room created: https://www.youtube.com/watch?v={upcoming_id}"
-                        if scheduled:
-                            msg += f" — starts at {scheduled}"
-                        await announce_channel.send(msg)
+                        video_url = f"https://www.youtube.com/watch?v={upcoming_id}"
+                        await self._send_youtube_embed(
+                            announce_channel,
+                            "youtube_notification_scheduled",
+                            {
+                                "{{video_url}}": video_url,
+                                "{{scheduled_time}}": scheduled or "TBA"
+                            },
+                            mention_prefix
+                        )
             except Exception as exc:  # noqa: BLE001
                 logger.exception("YouTube upcoming check failed for %s: %s", cid, exc)
 
@@ -111,8 +122,12 @@ class YouTubeNotifyCog(commands.Cog):
                     live_id = live_ids[0] if live_ids else None
                     if live_id and get_last_youtube_live(cid) != live_id:
                         set_last_youtube_live(cid, live_id)
-                        await announce_channel.send(
-                            f"{mention_prefix}YouTube is LIVE now: https://www.youtube.com/watch?v={live_id}"
+                        video_url = f"https://www.youtube.com/watch?v={live_id}"
+                        await self._send_youtube_embed(
+                            announce_channel,
+                            "youtube_notification_live",
+                            {"{{video_url}}": video_url},
+                            mention_prefix
                         )
             except Exception as exc:  # noqa: BLE001
                 logger.exception("YouTube live check failed for %s: %s", cid, exc)
@@ -245,6 +260,56 @@ class YouTubeNotifyCog(commands.Cog):
                 self._session = None
         except Exception:  # noqa: BLE001
             pass
+
+    async def _send_youtube_embed(self, channel: discord.TextChannel, template_name: str, 
+                                   replacements: dict, mention_prefix: str) -> None:
+        """Send a YouTube notification using embed template or fallback to text."""
+        from bot import load_embed_template
+        
+        template = load_embed_template(template_name, replacements)
+        
+        if template:
+            try:
+                color_str = template.get("color", "#FF0000")
+                if isinstance(color_str, str) and color_str.startswith("#"):
+                    color_int = int(color_str[1:], 16)
+                else:
+                    color_int = int(color_str) if isinstance(color_str, int) else 16711680
+                
+                embed = discord.Embed(
+                    title=template.get("title", "YouTube Notification"),
+                    description=template.get("description", ""),
+                    color=color_int
+                )
+                
+                for field in template.get("fields", []):
+                    embed.add_field(
+                        name=field.get("name", ""),
+                        value=field.get("value", ""),
+                        inline=field.get("inline", False)
+                    )
+                
+                footer_data = template.get("footer")
+                if footer_data:
+                    embed.set_footer(text=footer_data.get("text", ""))
+                
+                thumbnail = template.get("thumbnail")
+                if thumbnail and isinstance(thumbnail, dict) and thumbnail.get("url"):
+                    embed.set_thumbnail(url=thumbnail.get("url"))
+                
+                await channel.send(mention_prefix.strip() and f"{mention_prefix}", embed=embed)
+                return
+            except Exception as exc:
+                logger.warning("Failed to send YouTube embed for %s: %s, falling back to text", template_name, exc)
+        
+        # Fallback: send basic text notification
+        default_msg = {
+            "youtube_notification_upload": "New YouTube upload",
+            "youtube_notification_scheduled": "YouTube waiting room created", 
+            "youtube_notification_live": "YouTube is LIVE now"
+        }.get(template_name, "YouTube notification")
+        
+        await channel.send(f"{mention_prefix}{default_msg}")
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -128,8 +128,7 @@ class BirthdayCog(commands.Cog):
                     await self._safe_add_role(member, birthday_role, "Birthday role grant")
                 db.set_birthday_granted_year(user_id, local_now.year)
                 if announcement_channel:
-                    msg = self.announcement_message.replace("{mention}", member.mention)
-                    await announcement_channel.send(msg, allowed_mentions=discord.AllowedMentions(users=True))
+                    await self._send_birthday_announcement(member, announcement_channel)
             elif not is_birthday_today and birthday_role and birthday_role in member.roles and last_granted_year == local_now.year:
                 # Remove role after birthday passes.
                 await self._safe_remove_role(member, birthday_role, "Birthday role removal")
@@ -141,6 +140,43 @@ class BirthdayCog(commands.Cog):
         await self.bot.wait_until_ready()
 
     # ---------------- Helpers ---------------- #
+    async def _send_birthday_announcement(self, member: discord.Member, channel: discord.TextChannel) -> None:
+        """Send birthday announcement using embed template or fallback to text."""
+        from bot import load_embed_template
+        
+        template = load_embed_template("birthday_message", {"{{user_mention}}": member.mention})
+        
+        if template:
+            # Convert template to discord.Embed
+            try:
+                color_str = template.get("color", "#FFD700")
+                if isinstance(color_str, str) and color_str.startswith("#"):
+                    color_int = int(color_str[1:], 16)
+                else:
+                    color_int = int(color_str) if isinstance(color_str, int) else 16776960
+                
+                embed = discord.Embed(
+                    title=template.get("title", "🎂 Happy Birthday!"),
+                    description=template.get("description", ""),
+                    color=color_int
+                )
+                
+                for field in template.get("fields", []):
+                    embed.add_field(
+                        name=field.get("name", ""),
+                        value=field.get("value", ""),
+                        inline=field.get("inline", False)
+                    )
+                
+                await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions(users=True))
+                return
+            except Exception as exc:
+                logger.warning("Failed to send birthday embed: %s, falling back to text", exc)
+        
+        # Fallback to text message
+        msg = self.announcement_message.replace("{mention}", member.mention)
+        await channel.send(msg, allowed_mentions=discord.AllowedMentions(users=True))
+
     def _is_check_time(self, now: datetime) -> bool:
         try:
             hour_str, minute_str = self.check_time_utc.split(":")
