@@ -20,6 +20,11 @@ logger = logging.getLogger("bot")
 
 CONFIG_PATH = Path("config.json")
 
+# Persistent data directory for runtime files (DB, embeds, etc.)
+DATA_DIR = Path(os.environ.get("DATA_DIR", "data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+EMBEDS_PATH = DATA_DIR / "embeds.json"
+
 
 # Create FastAPI app for combined bot control API + dashboard
 api_app = FastAPI(title="ArpadBot")
@@ -177,7 +182,7 @@ async def update_config(data: dict):
 @api_app.get("/api/embed")
 async def get_embed():
     """Fetch embeds - returns a structure with embed keys like youtube_notification, welcome_message, etc."""
-    embed_path = Path("embeds.json")
+    embed_path = EMBEDS_PATH
     default_payload = {
         "welcome_message": {"title": "", "description": "", "color": "#5865F2", "fields": []},
         "youtube_notification": {"title": "", "description": "", "color": "#FF0000", "fields": []},
@@ -229,7 +234,7 @@ async def get_embed():
 async def save_embed(data: dict):
     """Save embeds to embeds.json."""
     try:
-        embed_path = Path("embeds.json")
+        embed_path = EMBEDS_PATH
         embeds_to_save: dict = {}
 
         # Convert welcome_message into webhook-style payload for the welcome feature
@@ -295,7 +300,7 @@ class CustomHelpCommand(commands.HelpCommand):
     
     async def _get_help_embed(self) -> discord.Embed:
         """Load and format the help embed from embeds.json."""
-        embed_path = Path("embeds.json")
+        embed_path = EMBEDS_PATH
         default_embed = discord.Embed(
             title="📚 Commands & Help",
             description="Welcome to the help guide! Here are some useful commands:",
@@ -358,7 +363,7 @@ def load_embed_template(template_name: str, replacements: Optional[dict] = None)
     Returns:
         Dictionary representation of the embed, or None if not found.
     """
-    embed_path = Path("embeds.json")
+    embed_path = EMBEDS_PATH
     if not embed_path.exists():
         return None
     
