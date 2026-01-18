@@ -103,24 +103,38 @@ def load_config() -> dict:
         except Exception as exc:  # noqa: BLE001
             logger.error("Failed to parse CONFIG_JSON env: %s", exc)
 
-    # 3) Fallback: sensible defaults + merge example if available
+    # 3) Fallback: use example file if available, otherwise sensible defaults
     port = int(os.environ.get("PORT", "8000"))
+    example_path = Path("config.example.json")
+
+    if example_path.exists():
+        try:
+            with example_path.open() as fp:
+                example_cfg = json.load(fp)
+
+            # Ensure dashboard/api sections exist and are enabled
+            example_cfg.setdefault("dashboard", {})
+            example_cfg["dashboard"].setdefault("enabled", True)
+            example_cfg["dashboard"]["port"] = port
+
+            example_cfg.setdefault("bot_api", {})
+            example_cfg["bot_api"].setdefault("enabled", True)
+            example_cfg["bot_api"].setdefault("url", f"http://0.0.0.0:{port}")
+
+            # Write example to real config for persistence on Azure
+            with CONFIG_PATH.open("w") as out:
+                json.dump(example_cfg, out, indent=2)
+            logger.warning("config.json not found; created from config.example.json (port=%d)", port)
+            return example_cfg
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to read/write config.example.json: %s", exc)
+
+    # No example file; return minimal defaults
     default_cfg: dict = {
         "dashboard": {"enabled": True, "port": port},
         "bot_api": {"enabled": True, "url": f"http://0.0.0.0:{port}"},
     }
-
-    example_path = Path("config.example.json")
-    if example_path.exists():
-        try:
-            with example_path.open() as fp:
-                example = json.load(fp)
-                # Merge example values on top of defaults (example may contain placeholders)
-                default_cfg = {**default_cfg, **example}
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Failed to read config.example.json: %s", exc)
-
-    logger.warning("config.json not found; using defaults (port=%d) and environment values", port)
+    logger.warning("config.json not found and no example available; using in-memory defaults (port=%d)", port)
     return default_cfg
 
 
