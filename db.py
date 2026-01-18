@@ -8,9 +8,14 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+import os
 from typing import Any, Dict, Optional
 
-DB_PATH = Path("data.db")
+# Use a persistent data directory if provided (e.g., Azure App Service's /home).
+# Defaults to a local 'data' folder for development.
+DATA_DIR = Path(os.environ.get("DATA_DIR", "data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "data.db"
 
 
 def _get_connection() -> sqlite3.Connection:

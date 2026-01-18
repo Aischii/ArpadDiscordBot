@@ -10,9 +10,12 @@ venv/
 
 # Local data
 data.db
+data/
+*.db
 
 # Config
 config.json
+embeds.json
 
 # OS / editors
 .DS_Store
