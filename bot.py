@@ -69,6 +69,17 @@ async def bot_health():
     return {"status": "starting"}
 
 
+@api_app.get("/api/ready")
+async def ready():
+    """Simple readiness probe for Azure health checks.
+
+    Returns 200 once the API server is up. Includes bot status to help
+    the dashboard decide if Discord has connected yet.
+    """
+    bot_status = "ok" if (_bot_instance and _bot_instance.user) else "starting"
+    return {"status": "ok", "bot": bot_status}
+
+
 @api_app.post("/api/restart")
 async def restart_bot():
     """Restart the bot (platform will auto-restart the process)."""
