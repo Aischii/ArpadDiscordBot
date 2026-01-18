@@ -82,10 +82,46 @@ async def restart_bot():
 
 
 def load_config() -> dict:
-    if not CONFIG_PATH.exists():
-        raise FileNotFoundError("config.json is missing. Copy config.example.json and fill in your values.")
-    with CONFIG_PATH.open() as fp:
-        return json.load(fp)
+    """Load configuration with sensible fallbacks.
+
+    Order of precedence:
+    1) `config.json` file if present
+    2) `CONFIG_JSON` environment variable containing JSON
+    3) Defaults merged with `config.example.json` if present
+    """
+    # 1) Primary: config.json
+    if CONFIG_PATH.exists():
+        with CONFIG_PATH.open() as fp:
+            return json.load(fp)
+
+    # 2) Env override: CONFIG_JSON
+    env_cfg = os.environ.get("CONFIG_JSON")
+    if env_cfg:
+        try:
+            logger.warning("CONFIG_JSON env detected; using environment-provided configuration")
+            return json.loads(env_cfg)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to parse CONFIG_JSON env: %s", exc)
+
+    # 3) Fallback: sensible defaults + merge example if available
+    port = int(os.environ.get("PORT", "8000"))
+    default_cfg: dict = {
+        "dashboard": {"enabled": True, "port": port},
+        "bot_api": {"enabled": True, "url": f"http://0.0.0.0:{port}"},
+    }
+
+    example_path = Path("config.example.json")
+    if example_path.exists():
+        try:
+            with example_path.open() as fp:
+                example = json.load(fp)
+                # Merge example values on top of defaults (example may contain placeholders)
+                default_cfg = {**default_cfg, **example}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to read config.example.json: %s", exc)
+
+    logger.warning("config.json not found; using defaults (port=%d) and environment values", port)
+    return default_cfg
 
 
 def save_config(config: dict) -> None:
@@ -255,7 +291,8 @@ def main() -> None:
     dashboard_enabled = config.get("dashboard", {}).get("enabled", False)
     
     if api_enabled or dashboard_enabled:
-        port = config.get("dashboard", {}).get("port", 8080)
+        # Prefer env PORT (Azure sets this) else config value else 8000
+        port = int(os.environ.get("PORT", str(config.get("dashboard", {}).get("port", 8000))))
         def run_server():
             uvicorn.run(
                 api_app,
